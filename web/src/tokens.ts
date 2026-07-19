@@ -1,0 +1,16 @@
+export const t = {
+  surface: '#1a1b1e',
+  surfaceAlt: '#222327',
+  surfaceHover: '#2c2e33',
+  surfaceBorder: '#2f3036',
+  textPrimary: '#e4e5e7',
+  textSecondary: '#8b8d97',
+  textTertiary: '#5c5e66',
+  accentBlue: '#4a9eff',
+  accentGreen: '#34d399',
+  accentCyan: '#22d3ee',
+  statusOk: '#34d399',
+  statusWarning: '#fbbf24',
+  statusDanger: '#ef4444',
+  glass: 'rgba(26,27,30,0.72)',
+};

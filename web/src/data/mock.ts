@@ -1,0 +1,26 @@
+export const usage = {
+  plan: 'GO Monthly',
+  status: 'active' as const,
+  expireDate: '2026-08-20',
+  fiveHourPercent: 82,
+  fiveHourReset: '01:42:30',
+  weeklyPercent: 63,
+  weeklyReset: 'Friday 09:00',
+  monthlyPercent: 45,
+  tokenToday: '8.5M',
+  token7d: '42M',
+  token30d: '180M',
+  tokenHistory: [
+    { date: 'Mon', tokens: 6.2 },
+    { date: 'Tue', tokens: 8.1 },
+    { date: 'Wed', tokens: 5.4 },
+    { date: 'Thu', tokens: 7.8 },
+    { date: 'Fri', tokens: 4.2 },
+    { date: 'Sat', tokens: 3.5 },
+    { date: 'Sun', tokens: 6.9 },
+  ],
+  models: [
+    { name: 'GPT', percentage: 60, color: '#4a9eff' },
+    { name: 'Claude', percentage: 40, color: '#d97706' },
+  ],
+};
