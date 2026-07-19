@@ -5,7 +5,7 @@ interface Props { models: { name: string; percentage: number; color: string }[] 
 export function ModelUsage({ models }: Props) {
   return (
     <div style={{ background: t.surfaceAlt, border: `1px solid ${t.surfaceBorder}`, borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <span style={{ fontSize: 14, fontWeight: 600, color: t.textPrimary }}>Model Usage</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: t.textPrimary }}>模型使用情况</span>
       {models.map(m => (
         <div key={m.name} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

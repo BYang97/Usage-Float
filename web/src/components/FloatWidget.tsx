@@ -43,12 +43,12 @@ export function FloatWidget({ percentage, resetTime, onOpenDashboard, onClose }:
         </div>
         <div style={{ marginTop: 16 }}><QuotaRing percentage={percentage} /></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, color: t.textSecondary }}>5h Window</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: t.textSecondary }}>5小时额度</span>
           <span style={{ width: 3, height: 3, borderRadius: '50%', background: t.textTertiary }} />
-          <span style={{ fontSize: 12, color: t.textTertiary }}>Reset: {resetTime}</span>
+          <span style={{ fontSize: 12, color: t.textTertiary }}>重置：{resetTime}</span>
         </div>
         <button onClick={onOpenDashboard} style={{ marginTop: 2, fontSize: 11, fontWeight: 500, color: t.accentBlue, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-          Open Dashboard &gt;
+          打开仪表盘 &gt;
         </button>
       </div>
     </div>

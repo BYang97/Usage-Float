@@ -6,12 +6,12 @@ interface Props { data: { date: string; tokens: number }[]; today: string; week:
 export function TokenUsage({ data, today, week, month }: Props) {
   return (
     <div style={{ background: t.surfaceAlt, border: `1px solid ${t.surfaceBorder}`, borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <span style={{ fontSize: 14, fontWeight: 600, color: t.textPrimary }}>Token Usage</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: t.textPrimary }}>Token 消耗</span>
       <div style={{ display: 'flex', gap: 16 }}>
         {[
-          { label: 'Today', value: today },
-          { label: '7 Days', value: week },
-          { label: '30 Days', value: month },
+          { label: '今日消耗', value: today },
+          { label: '近7天', value: week },
+          { label: '近30天', value: month },
         ].map(s => (
           <div key={s.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 11, color: t.textTertiary }}>{s.label}</span>
@@ -30,7 +30,7 @@ export function TokenUsage({ data, today, week, month }: Props) {
             </defs>
             <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#5c5e66', fontSize: 9 }} dy={8} />
             <YAxis hide />
-            <Tooltip contentStyle={{ background: '#222327', border: '1px solid #2f3036', borderRadius: 6, color: '#e4e5e7', fontSize: 12 }} formatter={(v: number) => [`${v}M`, 'Tokens']} />
+            <Tooltip contentStyle={{ background: '#222327', border: '1px solid #2f3036', borderRadius: 6, color: '#e4e5e7', fontSize: 12 }} formatter={(v: number) => [`${v}M`, 'Token']} />
             <Area type="monotone" dataKey="tokens" stroke="#4a9eff" strokeWidth={2} fill="url(#g)" dot={false} activeDot={{ r: 3, fill: '#4a9eff' }} />
           </AreaChart>
         </ResponsiveContainer>

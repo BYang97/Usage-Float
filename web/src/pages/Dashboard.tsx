@@ -20,9 +20,9 @@ export function Dashboard({ onNavigate, onMinimize, onClose }: Props) {
         <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <PlanCard plan={usage.plan} status={usage.status} expireDate={usage.expireDate} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            <QuotaCard title="5 Hour Window" percentage={usage.fiveHourPercent} resetTime={usage.fiveHourReset} />
-            <QuotaCard title="Weekly Window" percentage={usage.weeklyPercent} resetTime={usage.weeklyReset} />
-            <QuotaCard title="Monthly" percentage={usage.monthlyPercent} />
+            <QuotaCard title="5小时额度" percentage={usage.fiveHourPercent} resetTime={usage.fiveHourReset} />
+            <QuotaCard title="本周额度" percentage={usage.weeklyPercent} resetTime={usage.weeklyReset} />
+            <QuotaCard title="本月额度" percentage={usage.monthlyPercent} />
           </div>
           <div style={{ display: 'flex', gap: 16 }}>
             <div style={{ flex: 1, minWidth: 0 }}>

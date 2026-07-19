@@ -3,10 +3,10 @@ import { t } from '../tokens';
 interface Props { onNavigate: (page: string) => void; active: string }
 
 const items = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'history', label: 'Usage History' },
-  { id: 'models', label: 'Models' },
-  { id: 'settings', label: 'Settings' },
+  { id: 'dashboard', label: '首页' },
+  { id: 'history', label: '使用记录' },
+  { id: 'models', label: '模型统计' },
+  { id: 'settings', label: '设置' },
 ];
 
 export function Sidebar({ active, onNavigate }: Props) {

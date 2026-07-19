@@ -11,10 +11,10 @@ export function PlanCard({ plan, status, expireDate }: Props) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 16, fontWeight: 600, color: t.textPrimary }}>{plan}</span>
-        <span style={{ fontSize: 13, color: t.textSecondary }}>OpenCode GO - Active</span>
+        <span style={{ fontSize: 13, color: t.textSecondary }}>OpenCode Go - 正常</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 11, color: t.textTertiary }}>Expire</span>
+        <span style={{ fontSize: 11, color: t.textTertiary }}>到期时间</span>
         <span style={{ fontSize: 14, fontWeight: 500, color: t.textPrimary }}>{expireDate}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 4, background: 'rgba(52,211,153,0.1)' }}>

@@ -5,7 +5,7 @@ export function ProviderBadge({ status = 'active' }: { status?: 'active' | 'expi
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor }} />
-      <span style={{ fontSize: 13, fontWeight: 600, color: t.textPrimary }}>OpenCode GO</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: t.textPrimary }}>OpenCode Go</span>
     </div>
   );
 }
