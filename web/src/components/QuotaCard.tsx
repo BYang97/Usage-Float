@@ -9,7 +9,7 @@ export function QuotaCard({ title, percentage, resetTime }: Props) {
       <span style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary }}>{title}</span>
       <span style={{ fontSize: 28, fontWeight: 700, color: t.textPrimary }}>{percentage}%</span>
       <ProgressBar percentage={percentage} />
-      {resetTime && <span style={{ fontSize: 12, color: t.textTertiary }}>Reset: {resetTime}</span>}
+      {resetTime && <span style={{ fontSize: 12, color: t.textTertiary }}>重置：{resetTime}</span>}
     </div>
   );
 }

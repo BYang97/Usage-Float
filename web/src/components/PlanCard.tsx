@@ -1,6 +1,7 @@
 import { t } from '../tokens';
 
-interface Props { plan: string; status: string; expireDate: string }
+type PlanStatus = 'active' | 'expired' | 'error';
+interface Props { plan: string; status: PlanStatus; expireDate: string }
 
 export function PlanCard({ plan, status, expireDate }: Props) {
   const dotColor = status === 'active' ? t.statusOk : t.statusWarning;
