@@ -33,7 +33,7 @@ const comps = [
   { id:'comp:badge', name:'ProviderBadge', type:'frame', reusable:true, width:150, height:24, layout:'horizontal', gap:8, alignItems:'center',
     children:[
       { id:'badge:dot', name:'StatusDot', type:'ellipse', width:8, height:8, fill:c.accentGreen },
-      { id:'badge:label', name:'Label', type:'text', content:'OpenCode GO', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textPrimary, textGrowth:'fixed-width' },
+      { id:'badge:label', name:'Label', type:'text', content:'OpenCode Go', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textPrimary, textGrowth:'fixed-width' },
     ]},
   // QuotaRing
   { id:'comp:ring', name:'QuotaRing', type:'frame', reusable:true, width:80, height:80,
@@ -78,14 +78,14 @@ const floatWidget = {
     // info row
     { id:'float:info', name:'InfoRow', type:'frame', width:288, height:20, x:16, y:128, layout:'horizontal', gap:8, justifyContent:'space-between', alignItems:'center',
       children:[
-        { id:'float:5h', name:'FiveHourLabel', type:'text', content:'5h Window', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:c.textSecondary, textGrowth:'fixed-width' },
+        { id:'float:5h', name:'FiveHourLabel', type:'text', content:'5小时额度', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:c.textSecondary, textGrowth:'fixed-width' },
         { id:'float:dot', name:'Sep', type:'ellipse', width:3, height:3, fill:c.textTertiary },
-        { id:'float:cnt', name:'Countdown', type:'text', content:'Reset: 01:42:30', fontFamily:'Inter', fontSize:12, fontWeight:400, fill:c.textTertiary, textGrowth:'fixed-width' },
+        { id:'float:cnt', name:'Countdown', type:'text', content:'重置：01:42:30', fontFamily:'Inter', fontSize:12, fontWeight:400, fill:c.textTertiary, textGrowth:'fixed-width' },
       ]},
     // footer
     { id:'float:footer', name:'Footer', type:'frame', width:288, height:24, x:16, y:150,
       children:[
-        { id:'float:ft', name:'FooterText', type:'text', content:'Open Dashboard >', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.accentBlue, x:144, y:12, textAlign:'center', textAlignVertical:'center' },
+        { id:'float:ft', name:'FooterText', type:'text', content:'打开仪表盘 >', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.accentBlue, x:144, y:12, textAlign:'center', textAlignVertical:'center' },
       ]},
   ],
 };
@@ -109,18 +109,18 @@ const planCard = {
       ]},
     { id:'dash:pinfo', name:'PlanInfo', type:'frame', width:300, height:48, layout:'vertical', gap:4,
       children:[
-        { id:'dash:pn', name:'PlanName', type:'text', content:'GO Monthly', fontFamily:'Inter', fontSize:16, fontWeight:600, fill:c.textPrimary },
-        { id:'dash:pd', name:'PlanDesc', type:'text', content:'OpenCode GO - Active', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textSecondary },
+        { id:'dash:pn', name:'PlanName', type:'text', content:'Go 月度版', fontFamily:'Inter', fontSize:16, fontWeight:600, fill:c.textPrimary },
+        { id:'dash:pd', name:'PlanDesc', type:'text', content:'OpenCode Go - 正常', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textSecondary },
       ]},
     { id:'dash:pe', name:'PlanExpire', type:'frame', width:160, height:48, layout:'vertical', gap:4,
       children:[
-        { id:'dash:pel', name:'ExpireLabel', type:'text', content:'Expire', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.textTertiary },
+        { id:'dash:pel', name:'ExpireLabel', type:'text', content:'到期时间', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.textTertiary },
         { id:'dash:ped', name:'ExpireDate', type:'text', content:'2026-08-20', fontFamily:'Inter', fontSize:14, fontWeight:500, fill:c.textPrimary },
       ]},
     { id:'dash:ps', name:'PlanStatus', type:'frame', width:80, height:24, cornerRadius:4, fill:'rgba(52,211,153,0.1)', layout:'horizontal', gap:6, padding:[0,8,0,8], alignItems:'center',
       children:[
         { id:'dash:psd', name:'StatusDot', type:'ellipse', width:6, height:6, fill:c.statusOk },
-        { id:'dash:pst', name:'StatusText', type:'text', content:'Active', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.statusOk },
+        { id:'dash:pst', name:'StatusText', type:'text', content:'正常', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.statusOk },
       ]},
   ],
 };
@@ -131,31 +131,31 @@ const quotaGrid = {
     // 5H
     { id:'dash:q5', name:'FiveHourCard', type:'frame', width:293, height:160, fill:c.surfaceAlt, cornerRadius:8, layout:'vertical', gap:12, padding:[16,16,16,16],
       children:[
-        { id:'dash:q5t', name:'Q5Title', type:'text', content:'5 Hour Window', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
+        { id:'dash:q5t', name:'Q5Title', type:'text', content:'5小时额度', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
         { id:'dash:q5p', name:'Q5Pct', type:'text', content:'82%', fontFamily:'Inter', fontSize:28, fontWeight:700, fill:c.textPrimary },
         { id:'dash:q5b', name:'Q5Bar', type:'frame', width:261, height:8,
           children:[
             { id:'dash:q5bb', name:'Q5BarBG', type:'rectangle', width:261, height:8, fill:c.surfaceBorder, cornerRadius:4 },
             { id:'dash:q5bf', name:'Q5BarFG', type:'rectangle', width:214, height:8, fill:c.accentGreen, cornerRadius:4 },
           ]},
-        { id:'dash:q5r', name:'Q5Reset', type:'text', content:'Reset: 01:42:30', fontFamily:'Inter', fontSize:12, fontWeight:400, fill:c.textTertiary },
+        { id:'dash:q5r', name:'Q5Reset', type:'text', content:'重置：01:42:30', fontFamily:'Inter', fontSize:12, fontWeight:400, fill:c.textTertiary },
       ]},
     // Weekly
     { id:'dash:qw', name:'WeeklyCard', type:'frame', width:293, height:160, fill:c.surfaceAlt, cornerRadius:8, layout:'vertical', gap:12, padding:[16,16,16,16],
       children:[
-        { id:'dash:qwt', name:'QWTitle', type:'text', content:'Weekly Window', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
+        { id:'dash:qwt', name:'QWTitle', type:'text', content:'本周额度', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
         { id:'dash:qwp', name:'QWPct', type:'text', content:'63%', fontFamily:'Inter', fontSize:28, fontWeight:700, fill:c.textPrimary },
         { id:'dash:qwb', name:'QWBar', type:'frame', width:261, height:8,
           children:[
             { id:'dash:qwbb', name:'QWBarBG', type:'rectangle', width:261, height:8, fill:c.surfaceBorder, cornerRadius:4 },
             { id:'dash:qwbf', name:'QWBarFG', type:'rectangle', width:164, height:8, fill:c.statusWarning, cornerRadius:4 },
           ]},
-        { id:'dash:qwr', name:'QWReset', type:'text', content:'Reset: Friday 09:00', fontFamily:'Inter', fontSize:12, fontWeight:400, fill:c.textTertiary },
+        { id:'dash:qwr', name:'QWReset', type:'text', content:'重置：周五 09:00', fontFamily:'Inter', fontSize:12, fontWeight:400, fill:c.textTertiary },
       ]},
     // Monthly
     { id:'dash:qm', name:'MonthlyCard', type:'frame', width:293, height:160, fill:c.surfaceAlt, cornerRadius:8, layout:'vertical', gap:12, padding:[16,16,16,16],
       children:[
-        { id:'dash:qmt', name:'QMTitle', type:'text', content:'Monthly', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
+        { id:'dash:qmt', name:'QMTitle', type:'text', content:'本月额度', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
         { id:'dash:qmp', name:'QMPct', type:'text', content:'45%', fontFamily:'Inter', fontSize:28, fontWeight:700, fill:c.textPrimary },
         { id:'dash:qmb', name:'QMBar', type:'frame', width:261, height:8,
           children:[
@@ -169,23 +169,23 @@ const quotaGrid = {
 const tokenUsage = {
   id:'dash:tk', name:'TokenUsage', type:'frame', width:600, height:280, fill:c.surfaceAlt, cornerRadius:8, layout:'vertical', gap:16, padding:[16,20,16,20],
   children:[
-    { id:'dash:tkh', name:'TKHeader', type:'text', content:'Token Usage', fontFamily:'Inter', fontSize:14, fontWeight:600, fill:c.textPrimary },
+    { id:'dash:tkh', name:'TKHeader', type:'text', content:'Token 消耗', fontFamily:'Inter', fontSize:14, fontWeight:600, fill:c.textPrimary },
     // stats row
     { id:'dash:tks', name:'TKStats', type:'frame', width:560, height:48, layout:'horizontal', gap:16,
       children:[
         { id:'dash:tkt', name:'TKToday', type:'frame', width:170, height:48, layout:'vertical', gap:4,
           children:[
-            { id:'dash:tktl', name:'TKTodayL', type:'text', content:'Today', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.textTertiary },
+            { id:'dash:tktl', name:'TKTodayL', type:'text', content:'今日消耗', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.textTertiary },
             { id:'dash:tktv', name:'TKTodayV', type:'text', content:'8.5M', fontFamily:'Inter', fontSize:22, fontWeight:700, fill:c.textPrimary },
           ]},
         { id:'dash:tk7', name:'TK7d', type:'frame', width:170, height:48, layout:'vertical', gap:4,
           children:[
-            { id:'dash:tk7l', name:'TK7dL', type:'text', content:'7 Days', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.textTertiary },
+            { id:'dash:tk7l', name:'TK7dL', type:'text', content:'近7天', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.textTertiary },
             { id:'dash:tk7v', name:'TK7dV', type:'text', content:'42M', fontFamily:'Inter', fontSize:22, fontWeight:700, fill:c.textPrimary },
           ]},
         { id:'dash:tk3', name:'TK30d', type:'frame', width:170, height:48, layout:'vertical', gap:4,
           children:[
-            { id:'dash:tk3l', name:'TK30dL', type:'text', content:'30 Days', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.textTertiary },
+            { id:'dash:tk3l', name:'TK30dL', type:'text', content:'近30天', fontFamily:'Inter', fontSize:11, fontWeight:500, fill:c.textTertiary },
             { id:'dash:tk3v', name:'TK30dV', type:'text', content:'180M', fontFamily:'Inter', fontSize:22, fontWeight:700, fill:c.textPrimary },
           ]},
       ]},
@@ -204,7 +204,7 @@ const tokenUsage = {
         { id:'dash:tcl', name:'Line', type:'path',
           geometry:'M 20 120 L 40 100 L 60 80 L 80 85 L 100 65 L 120 70 L 140 50 L 160 55 L 180 40 L 200 45 L 220 35 L 240 38 L 260 28 L 280 32 L 300 22 L 320 25 L 340 30 L 360 20 L 380 25 L 400 30 L 420 35 L 440 28 L 460 18 L 480 22 L 500 15 L 520 18 L 540 12',
           stroke:{ align:'center', thickness:2, fill:c.accentBlue }, fill:'none' },
-        { id:'dash:tcx', name:'XLabel', type:'text', content:'Mon   Wed   Fri   Sun', fontFamily:'Inter', fontSize:9, fontWeight:400, fill:c.textTertiary, x:20, y:130 },
+        { id:'dash:tcx', name:'XLabel', type:'text', content:'周一   周三   周五   周日', fontFamily:'Inter', fontSize:9, fontWeight:400, fill:c.textTertiary, x:20, y:130 },
       ]},
   ],
 };
@@ -212,13 +212,13 @@ const tokenUsage = {
 const modelUsage = {
   id:'dash:md', name:'ModelUsage', type:'frame', width:296, height:280, fill:c.surfaceAlt, cornerRadius:8, layout:'vertical', gap:16, padding:[16,20,16,20],
   children:[
-    { id:'dash:mdh', name:'MDHeader', type:'text', content:'Model Usage', fontFamily:'Inter', fontSize:14, fontWeight:600, fill:c.textPrimary },
+    { id:'dash:mdh', name:'MDHeader', type:'text', content:'模型使用情况', fontFamily:'Inter', fontSize:14, fontWeight:600, fill:c.textPrimary },
     // GPT
     { id:'dash:mdg', name:'MD_GPT', type:'frame', width:256, height:60, layout:'vertical', gap:8,
       children:[
         { id:'dash:mdgh', name:'MD_GPT_H', type:'frame', width:256, height:16, layout:'horizontal', justifyContent:'space-between',
           children:[
-            { id:'dash:mdgn', name:'MD_GPT_N', type:'text', content:'GPT', fontFamily:'Inter', fontSize:13, fontWeight:500, fill:c.textPrimary },
+            { id:'dash:mdgn', name:'MD_GPT_N', type:'text', content:'GPT 系列', fontFamily:'Inter', fontSize:13, fontWeight:500, fill:c.textPrimary },
             { id:'dash:mdgp', name:'MD_GPT_P', type:'text', content:'60%', fontFamily:'Inter', fontSize:13, fontWeight:500, fill:c.accentBlue },
           ]},
         { id:'dash:mdgb', name:'MD_GPT_B', type:'frame', width:256, height:8,
@@ -232,7 +232,7 @@ const modelUsage = {
       children:[
         { id:'dash:mdch', name:'MD_Claude_H', type:'frame', width:256, height:16, layout:'horizontal', justifyContent:'space-between',
           children:[
-            { id:'dash:mdcn', name:'MD_Claude_N', type:'text', content:'Claude', fontFamily:'Inter', fontSize:13, fontWeight:500, fill:c.textPrimary },
+            { id:'dash:mdcn', name:'MD_Claude_N', type:'text', content:'Claude 系列', fontFamily:'Inter', fontSize:13, fontWeight:500, fill:c.textPrimary },
             { id:'dash:mdcp', name:'MD_Claude_P', type:'text', content:'40%', fontFamily:'Inter', fontSize:13, fontWeight:500, fill:'#d97706' },
           ]},
         { id:'dash:mdcb', name:'MD_Claude_B', type:'frame', width:256, height:8,
@@ -257,18 +257,18 @@ const dashboard = {
             { id:'dash:logo-text', name:'LogoText', type:'text', content:'OpenCode Usage Float', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textPrimary },
           ]},
         { id:'dash:sd1', name:'Div1', type:'rectangle', width:208, height:1, x:16, y:52, fill:c.surfaceBorder },
-        { id:'dash:menu1', name:'MenuDashboard', type:'ref', ref:'comp:si', x:10, y:68, descendants:{ 'si:label':{ content:'Dashboard' }, 'si:icon':{ fill:c.accentBlue } } },
-        { id:'dash:menu2', name:'MenuUsage', type:'ref', ref:'comp:si', x:10, y:108, descendants:{ 'si:label':{ content:'Usage History' } } },
-        { id:'dash:menu3', name:'MenuModels', type:'ref', ref:'comp:si', x:10, y:148, descendants:{ 'si:label':{ content:'Models' } } },
+        { id:'dash:menu1', name:'MenuDashboard', type:'ref', ref:'comp:si', x:10, y:68, descendants:{ 'si:label':{ content:'首页' }, 'si:icon':{ fill:c.accentBlue } } },
+        { id:'dash:menu2', name:'MenuUsage', type:'ref', ref:'comp:si', x:10, y:108, descendants:{ 'si:label':{ content:'使用记录' } } },
+        { id:'dash:menu3', name:'MenuModels', type:'ref', ref:'comp:si', x:10, y:148, descendants:{ 'si:label':{ content:'模型统计' } } },
         { id:'dash:sd2', name:'Div2', type:'rectangle', width:208, height:1, x:16, y:200, fill:c.surfaceBorder },
-        { id:'dash:menu4', name:'MenuSettings', type:'ref', ref:'comp:si', x:10, y:216, descendants:{ 'si:label':{ content:'Settings' } } },
+        { id:'dash:menu4', name:'MenuSettings', type:'ref', ref:'comp:si', x:10, y:216, descendants:{ 'si:label':{ content:'设置' } } },
       ]},
     // Header
     { id:'dash:header', name:'Header', type:'frame', width:CW, height:HH, x:CX, fill:c.surface, layout:'horizontal', justifyContent:'space-between', alignItems:'center', padding:[0,20,0,24],
       children:[
         { id:'dash:hl', name:'HLeft', type:'frame', width:200, height:HH, layout:'horizontal', gap:10, alignItems:'center',
           children:[
-            { id:'dash:hl-text', name:'HLText', type:'text', content:'OpenCode GO', fontFamily:'Inter', fontSize:16, fontWeight:600, fill:c.textPrimary },
+            { id:'dash:hl-text', name:'HLText', type:'text', content:'OpenCode Go', fontFamily:'Inter', fontSize:16, fontWeight:600, fill:c.textPrimary },
           ]},
         { id:'dash:hr', name:'HRight', type:'frame', width:100, height:HH, layout:'horizontal', gap:4, alignItems:'center', justifyContent:'flex-end',
           children:[
@@ -306,17 +306,17 @@ const settings = {
     // Title bar
     { id:'set:tb', name:'TitleBar', type:'frame', width:480, height:48, layout:'horizontal', justifyContent:'space-between', alignItems:'center', padding:[0,16,0,20],
       children:[
-        { id:'set:tt', name:'Title', type:'text', content:'Settings', fontFamily:'Inter', fontSize:16, fontWeight:600, fill:c.textPrimary },
+        { id:'set:tt', name:'Title', type:'text', content:'设置', fontFamily:'Inter', fontSize:16, fontWeight:600, fill:c.textPrimary },
         { id:'set:tc', name:'CloseBtn', type:'text', content:X, fontFamily:'Inter', fontSize:14, fontWeight:400, fill:c.textTertiary },
       ]},
     { id:'set:d1', name:'Div1', type:'rectangle', width:480, height:1, y:48, fill:c.surfaceBorder },
     // General
     { id:'set:sg', name:'SectionGeneral', type:'frame', width:480, height:110, y:49, layout:'vertical', gap:8, padding:[16,20,16,20],
       children:[
-        { id:'set:sgh', name:'SGHeader', type:'text', content:'General', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
+        { id:'set:sgh', name:'SGHeader', type:'text', content:'通用设置', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
         { id:'set:sga', name:'SGAutoStart', type:'frame', width:440, height:32, layout:'horizontal', justifyContent:'space-between', alignItems:'center',
           children:[
-            { id:'set:sg-al', name:'SGASLabel', type:'text', content:'Launch at startup', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textPrimary },
+            { id:'set:sg-al', name:'SGASLabel', type:'text', content:'开机自动启动', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textPrimary },
             { id:'set:sg-at', name:'SGASToggle', type:'frame', width:36, height:20, cornerRadius:10, fill:c.accentBlue,
               children:[
                 { id:'set:sg-ak', name:'SGASKnob', type:'ellipse', width:16, height:16, x:18, y:2, fill:'#ffffff' },
@@ -324,18 +324,18 @@ const settings = {
           ]},
         { id:'set:sgr', name:'SGRefresh', type:'frame', width:440, height:32, layout:'horizontal', gap:12, alignItems:'center',
           children:[
-            { id:'set:sgrl', name:'SGRLabel', type:'text', content:'Auto refresh', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textPrimary },
-            { id:'set:sgr5', name:'SGR5', type:'frame', width:40, height:24, cornerRadius:4, fill:c.accentBlue, layout:'horizontal', padding:[0,8,0,8], alignItems:'center',
+            { id:'set:sgrl', name:'SGRLabel', type:'text', content:'刷新频率', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textPrimary },
+            { id:'set:sgr5', name:'SGR5', type:'frame', width:44, height:24, cornerRadius:4, fill:c.accentBlue, layout:'horizontal', padding:[0,8,0,8], alignItems:'center',
               children:[
-                { id:'set:sgr5t', name:'SGR5T', type:'text', content:'5m', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:'#ffffff' },
+                { id:'set:sgr5t', name:'SGR5T', type:'text', content:'5分钟', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:'#ffffff' },
               ]},
-            { id:'set:sgr30', name:'SGR30', type:'frame', width:44, height:24, cornerRadius:4, fill:c.surfaceHover, layout:'horizontal', padding:[0,8,0,8], alignItems:'center',
+            { id:'set:sgr30', name:'SGR30', type:'frame', width:48, height:24, cornerRadius:4, fill:c.surfaceHover, layout:'horizontal', padding:[0,8,0,8], alignItems:'center',
               children:[
-                { id:'set:sgr30t', name:'SGR30T', type:'text', content:'30m', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:c.textSecondary },
+                { id:'set:sgr30t', name:'SGR30T', type:'text', content:'30分钟', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:c.textSecondary },
               ]},
-            { id:'set:sgr60', name:'SGR60', type:'frame', width:44, height:24, cornerRadius:4, fill:c.surfaceHover, layout:'horizontal', padding:[0,8,0,8], alignItems:'center',
+            { id:'set:sgr60', name:'SGR60', type:'frame', width:48, height:24, cornerRadius:4, fill:c.surfaceHover, layout:'horizontal', padding:[0,8,0,8], alignItems:'center',
               children:[
-                { id:'set:sgr60t', name:'SGR60T', type:'text', content:'60m', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:c.textSecondary },
+                { id:'set:sgr60t', name:'SGR60T', type:'text', content:'60分钟', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:c.textSecondary },
               ]},
           ]},
       ]},
@@ -343,10 +343,10 @@ const settings = {
     // Display
     { id:'set:sd', name:'SectionDisplay', type:'frame', width:480, height:110, y:160, layout:'vertical', gap:8, padding:[16,20,16,20],
       children:[
-        { id:'set:sdh', name:'SDHeader', type:'text', content:'Display', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
+        { id:'set:sdh', name:'SDHeader', type:'text', content:'外观设置', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
         { id:'set:sdf', name:'SDFloat', type:'frame', width:440, height:32, layout:'horizontal', justifyContent:'space-between', alignItems:'center',
           children:[
-            { id:'set:sdfl', name:'SDFLabel', type:'text', content:'Floating widget', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textPrimary },
+            { id:'set:sdfl', name:'SDFLabel', type:'text', content:'悬浮球', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textPrimary },
             { id:'set:sdft', name:'SDFToggle', type:'frame', width:36, height:20, cornerRadius:10, fill:c.accentBlue,
               children:[
                 { id:'set:sdfk', name:'SDFKnob', type:'ellipse', width:16, height:16, x:18, y:2, fill:'#ffffff' },
@@ -354,10 +354,10 @@ const settings = {
           ]},
         { id:'set:sdt', name:'SDTheme', type:'frame', width:440, height:32, layout:'horizontal', justifyContent:'space-between', alignItems:'center',
           children:[
-            { id:'set:sdtl', name:'SDTLabel', type:'text', content:'Theme', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textPrimary },
-            { id:'set:sdtv', name:'SDTValue', type:'frame', width:80, height:28, cornerRadius:4, fill:c.surfaceHover, layout:'horizontal', padding:[0,10,0,10], alignItems:'center', gap:4,
+            { id:'set:sdtl', name:'SDTLabel', type:'text', content:'主题', fontFamily:'Inter', fontSize:13, fontWeight:400, fill:c.textPrimary },
+            { id:'set:sdtv', name:'SDTValue', type:'frame', width:100, height:28, cornerRadius:4, fill:c.surfaceHover, layout:'horizontal', padding:[0,10,0,10], alignItems:'center', gap:4,
               children:[
-                { id:'set:sdtt', name:'SDTText', type:'text', content:'Dark', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:c.textPrimary },
+                { id:'set:sdtt', name:'SDTText', type:'text', content:'深色模式', fontFamily:'Inter', fontSize:12, fontWeight:500, fill:c.textPrimary },
                 { id:'set:sdta', name:'SDTArrow', type:'text', content:'>', fontFamily:'Inter', fontSize:14, fontWeight:400, fill:c.textTertiary },
               ]},
           ]},
@@ -366,11 +366,11 @@ const settings = {
     // Privacy
     { id:'set:sp', name:'SectionPrivacy', type:'frame', width:480, height:80, y:271, layout:'vertical', gap:8, padding:[16,20,16,20],
       children:[
-        { id:'set:sph', name:'SPHeader', type:'text', content:'Privacy', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
+        { id:'set:sph', name:'SPHeader', type:'text', content:'隐私设置', fontFamily:'Inter', fontSize:13, fontWeight:600, fill:c.textSecondary },
         { id:'set:spb', name:'SPBadge', type:'frame', width:440, height:32, layout:'horizontal', gap:8, alignItems:'center',
           children:[
             { id:'set:spl', name:'SPLock', type:'rectangle', width:14, height:16, fill:c.textTertiary, cornerRadius:2 },
-            { id:'set:spt', name:'SPText', type:'text', content:'Local data only - No cloud sync', fontFamily:'Inter', fontSize:12, fontWeight:400, fill:c.textSecondary },
+            { id:'set:spt', name:'SPText', type:'text', content:'数据仅保存在本机 · 不上传用户数据', fontFamily:'Inter', fontSize:12, fontWeight:400, fill:c.textSecondary },
           ]},
       ]},
   ],
