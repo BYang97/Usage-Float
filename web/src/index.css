@@ -1,16 +1,118 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+@import "tailwindcss";
 
-html, body, #root {
+/* ============================================================
+ * Design Tokens — UI 设计规范.md 第 1 章
+ * Tailwind v4 CSS-first 配置:单一事实来源,tokens.ts 与组件共用。
+ * 修改 token 只动这里,无需 tailwind.config.ts。
+ * ============================================================ */
+@theme {
+  /* 1.1 色彩系统 */
+  --color-surface: #1a1b1e;        /* 主背景 */
+  --color-surface-alt: #222327;    /* 卡片背景 */
+  --color-surface-hover: #2c2e33;  /* hover 态 */
+  --color-surface-border: #2f3036; /* 边框 */
+
+  --color-text-primary: #e4e5e7;
+  --color-text-secondary: #8b8d97;
+  --color-text-tertiary: #5c5e66;
+  --color-text-inverse: #0d0d0f;
+
+  --color-accent-blue: #4a9eff;
+  --color-accent-green: #34d399;
+  --color-accent-cyan: #22d3ee;
+
+  --color-status-ok: #34d399;      /* 正常  > 50% */
+  --color-status-warning: #fbbf24; /* 警告  20–50% */
+  --color-status-danger: #ef4444;  /* 危险  < 20% */
+
+  /* 1.4 圆角 */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* 1.5 阴影 */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-float: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.5);
+
+  /* 1.2 字体族 */
+  --font-sans: "Inter", "Segoe UI", -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+}
+
+/* ============================================================
+ * 全局基础样式
+ * ============================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
   height: 100%;
-  background: #1a1b1e;
-  color: #e4e5e7;
-  font-family: "Inter", "Segoe UI", -apple-system, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   user-select: none;
 }
 
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2f3036; border-radius: 999px; }
+/* 滚动条 — Tauri 无边框窗口 */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-border);
+  border-radius: 999px;
+}
+
+/* ============================================================
+ * 组件层 (Tailwind v4 @utility 等价于 @layer components)
+ * 供后续 worktree 迁移组件时使用。
+ * ============================================================ */
+@layer components {
+  .glass {
+    background: rgba(26, 27, 30, 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .card {
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-surface-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .tag-ok {
+    background: color-mix(in srgb, var(--color-status-ok) 10%, transparent);
+    color: var(--color-status-ok);
+  }
+  .tag-warning {
+    background: color-mix(in srgb, var(--color-status-warning) 10%, transparent);
+    color: var(--color-status-warning);
+  }
+  .tag-danger {
+    background: color-mix(in srgb, var(--color-status-danger) 10%, transparent);
+    color: var(--color-status-danger);
+  }
+}

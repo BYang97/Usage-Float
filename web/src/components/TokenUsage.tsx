@@ -30,7 +30,7 @@ export function TokenUsage({ data, today, week, month }: Props) {
             </defs>
             <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#5c5e66', fontSize: 9 }} dy={8} />
             <YAxis hide />
-            <Tooltip contentStyle={{ background: '#222327', border: '1px solid #2f3036', borderRadius: 6, color: '#e4e5e7', fontSize: 12 }} formatter={(v: number) => [`${v}M`, 'Token']} />
+            <Tooltip contentStyle={{ background: '#222327', border: '1px solid #2f3036', borderRadius: 6, color: '#e4e5e7', fontSize: 12 }} formatter={(v) => [`${v}M`, 'Token']} />
             <Area type="monotone" dataKey="tokens" stroke="#4a9eff" strokeWidth={2} fill="url(#g)" dot={false} activeDot={{ r: 3, fill: '#4a9eff' }} />
           </AreaChart>
         </ResponsiveContainer>

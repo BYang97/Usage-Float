@@ -1,16 +1,20 @@
+// Design tokens — 与 index.css 的 @theme 共享同一套 CSS 变量。
+// 修改 token 只动 index.css 的 @theme,这里自动跟随。
+// 组件通过 `t.surface` 等以 JS 形式引用,等价于 Tailwind 类 `bg-surface`。
+
 export const t = {
-  surface: '#1a1b1e',
-  surfaceAlt: '#222327',
-  surfaceHover: '#2c2e33',
-  surfaceBorder: '#2f3036',
-  textPrimary: '#e4e5e7',
-  textSecondary: '#8b8d97',
-  textTertiary: '#5c5e66',
-  accentBlue: '#4a9eff',
-  accentGreen: '#34d399',
-  accentCyan: '#22d3ee',
-  statusOk: '#34d399',
-  statusWarning: '#fbbf24',
-  statusDanger: '#ef4444',
-  glass: 'rgba(26,27,30,0.72)',
-};
+  surface: 'var(--color-surface)',
+  surfaceAlt: 'var(--color-surface-alt)',
+  surfaceHover: 'var(--color-surface-hover)',
+  surfaceBorder: 'var(--color-surface-border)',
+  textPrimary: 'var(--color-text-primary)',
+  textSecondary: 'var(--color-text-secondary)',
+  textTertiary: 'var(--color-text-tertiary)',
+  accentBlue: 'var(--color-accent-blue)',
+  accentGreen: 'var(--color-accent-green)',
+  accentCyan: 'var(--color-accent-cyan)',
+  statusOk: 'var(--color-status-ok)',
+  statusWarning: 'var(--color-status-warning)',
+  statusDanger: 'var(--color-status-danger)',
+  glass: 'rgba(26, 27, 30, 0.72)',
+} as const;

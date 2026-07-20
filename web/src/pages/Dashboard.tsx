@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { t } from '../tokens';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
 import { PlanCard } from '../components/PlanCard';

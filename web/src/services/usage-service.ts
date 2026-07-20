@@ -1,7 +1,10 @@
+import { isTauri } from '@tauri-apps/api/core';
 import type { UsageProvider, UsageData } from '../types';
 import { MockProvider } from '../providers/mock-provider';
+import { TauriProvider } from '../providers/tauri-provider';
 
-let provider: UsageProvider = new MockProvider();
+// Tauri 运行时内走 Rust 命令;纯 web 预览回落 mock。
+let provider: UsageProvider = isTauri() ? new TauriProvider() : new MockProvider();
 
 export function setProvider(p: UsageProvider) {
   provider = p;
