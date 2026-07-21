@@ -1,9 +1,34 @@
+import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { t } from '../tokens';
 import { Sidebar } from '../components/Sidebar';
 
 interface Props { onNavigate: (page: string) => void }
 
 export function Settings({ onNavigate }: Props) {
+  const [cookie, setCookie] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    // 尝试加载已保存的 cookie
+    invoke<string>('get_opencode_cookie')
+      .then(val => { if (val) setCookie(val); })
+      .catch(() => { /* ignore, cookie not set */ });
+  }, []);
+
+  const handleSave = async () => {
+    setSaved(false);
+    setError('');
+    try {
+      await invoke('set_opencode_cookie', { cookie });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e: any) {
+      setError(typeof e === 'string' ? e : e?.message || '保存失败');
+    }
+  };
+
   const toggle = { width: 36, height: 20, borderRadius: 10, background: t.accentBlue, position: 'relative', flexShrink: 0, cursor: 'pointer' } as const;
   const knob = { position: 'absolute', width: 16, height: 16, borderRadius: '50%', background: '#fff', top: 2, right: 2 } as const;
   const chipBase = { height: 24, paddingLeft: 8, paddingRight: 8, borderRadius: 4, display: 'flex', alignItems: 'center', fontSize: 12, fontWeight: 500, cursor: 'pointer' } as const;
@@ -11,8 +36,8 @@ export function Settings({ onNavigate }: Props) {
   return (
     <div style={{ display: 'flex', height: '100%' }}>
       <Sidebar active="settings" onNavigate={onNavigate} />
-      <div style={{ flex: 1, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ background: t.surfaceAlt, borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.5)', width: 480, overflow: 'hidden' }}>
+      <div style={{ flex: 1, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
+        <div style={{ background: t.surfaceAlt, borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.5)', width: 480, overflow: 'hidden', maxHeight: '90vh', overflowY: 'auto' }}>
           {/* Title */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 16, paddingTop: 14, paddingBottom: 14 }}>
             <span style={{ fontSize: 16, fontWeight: 600, color: t.textPrimary }}>设置</span>
@@ -56,6 +81,68 @@ export function Settings({ onNavigate }: Props) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 14, height: 16, borderRadius: 2, background: t.textTertiary }} />
               <span style={{ fontSize: 12, color: t.textSecondary }}>数据仅保存在本机 · 不上传用户数据</span>
+            </div>
+          </Section>
+
+          <div style={{ height: 1, background: t.surfaceBorder }} />
+
+          {/* OpenCode Go Auth */}
+          <Section title="OpenCode Go 认证">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <p style={{ margin: 0, fontSize: 12, color: t.textSecondary, lineHeight: 1.5 }}>
+                从浏览器开发者工具的 Network 面板中，复制任意 opencode.ai 请求的 <code style={{ color: t.accentBlue }}>Cookie</code> 请求头，粘贴到下方文本框。该 cookie 仅保存于本机，不会发送给任何第三方。
+              </p>
+              <textarea
+                value={cookie}
+                onChange={e => { setCookie(e.target.value); setSaved(false); }}
+                placeholder="粘贴 Cookie 值，形如 auth=Fe26.2..."
+                rows={4}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '10px 12px',
+                  borderRadius: 6,
+                  border: `1px solid ${t.surfaceBorder}`,
+                  background: t.surface,
+                  color: t.textPrimary,
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  resize: 'vertical',
+                  outline: 'none',
+                  lineHeight: 1.5,
+                }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  onClick={handleSave}
+                  style={{
+                    height: 30,
+                    paddingLeft: 16,
+                    paddingRight: 16,
+                    borderRadius: 6,
+                    border: 'none',
+                    background: t.accentBlue,
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}>
+                  保存
+                </button>
+                {saved && (
+                  <span style={{ fontSize: 12, color: t.accentGreen, fontWeight: 500 }}>
+                    已保存
+                  </span>
+                )}
+                {error && (
+                  <span style={{ fontSize: 12, color: t.statusDanger, fontWeight: 500 }}>
+                    {error}
+                  </span>
+                )}
+              </div>
             </div>
           </Section>
         </div>

@@ -1,0 +1,20 @@
+你是 Phase 2 的 Rust 实现工程师。请先读 docs/contract.md 和 docs/opencode-data-format.md，它们是本任务的唯一依据。本轮做批次1：仅本地 SQLite 采集，不涉及 opencode.ai API 端点。
+
+实现以下文件：
+
+1. src-tauri/src/collector/model.rs：定义契约第4节的结构 RawSessionUsage、LocalAggregate、DayBucket、ModelBreakdown，以及第2节的占位结构 ApiQuota、ApiWindow、ApiAccount（标注 TODO 待端点确认）。所有结构加 derive Debug Clone serde Serialize，字段用 serde rename camelCase。
+
+2. src-tauri/src/collector/error.rs：契约第6节的 CollectorError 枚举，变体为 NotFound、OpenFailed(String)、QueryFailed(String)、ParseFailed(String)、NoCookie、ApiError(String)、Unauthorized。用 thiserror 实现 std::error::Error，Display 写中文。
+
+3. src-tauri/src/collector/opencode.rs：实现三个函数。
+   resolve_opencode_db：按契约第1节优先级查找 opencode 的 db 文件。优先级顺序是：环境变量 OPENCODE_DB 绝对路径；其次 XDG_DATA_HOME 下的 opencode 子目录；再其次 HOME 或 USERPROFILE 下的 .local/share/opencode 目录；在目录里找 opencode.db，找不到返回 NotFound。
+   read_all_sessions：用 rusqlite 以只读模式打开 db（OpenFlags 用 SQLITE_OPEN_READ_ONLY 加 SQLITE_OPEN_NO_MUTEX），执行 SQL 查询 SELECT id, model, cost, tokens_input, tokens_output, tokens_reasoning, tokens_cache_read, tokens_cache_write, time_created FROM session，每行解析成 RawSessionUsage。model 列是 JSON 字符串，解析其中的 id、providerID、variant 字段。打开失败返回 OpenFailed，查询失败返回 QueryFailed，JSON 解析失败返回 ParseFailed。
+   aggregate_local：入参是 RawSessionUsage 切片和当前时间 now_ms（epoch 毫秒）。聚合出 LocalAggregate：total_tokens 等于 input 加 output 加 reasoning 加 cache_read 加 cache_write 的总和；daily_history 取最近7天每天的 token 合计，按周一到周日中文标签输出；models 按 model id 分组算百分比，颜色按 GPT 系列蓝色、Claude 系列橙色、其余青色。不 panic。
+
+4. src-tauri/src/database.rs：契约第5节的 schema 建表函数 init_schema，接收 db 路径，用 rusqlite 打开并 CREATE TABLE IF NOT EXISTS 建立 settings、account、quota、usage 四张表。再加 settings 表存取加密 cookie 的骨架函数 get_setting 和 set_setting，加密选型用 ring 的 aead 加机器绑定密钥，或用 Windows DPAPI，你选其一实现。
+
+5. src-tauri/src/collector/api.rs：只建空文件，加 TODO 注释说明端点待调研后补，不要猜测端点。
+
+要求：async 优先；错误一律用 Result 返回，绝不 panic；读 OpenCode 的 db 必须只读，绝不写回。改 Cargo.toml 时只加本地采集必需的依赖，rusqlite 和 anyhow 已经在，可以加 thiserror 和 ring，reqwest 先占位。不要改 lib.rs，那是 pi 的接线职责。
+
+完成后在终端输出你改动的文件清单，并运行 cargo check 把结果贴出来。遇到契约不清楚的地方，在输出里标注疑问，不要自行猜测实现细节。

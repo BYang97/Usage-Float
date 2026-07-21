@@ -1,0 +1,13 @@
+你是 Phase 2 的接线工程师。请先读 docs/contract.md 和 UI设计规范.md。本轮做批次1，不涉及 opencode.ai API 端点。
+
+任务有三部分：
+
+第一部分，前端。改 web/src/pages/Settings.tsx，新增一个 OpenCode Go 认证区域，里面放一个多行文本框，供用户粘贴 auth cookie，cookie 形如以 Fe26.2 开头的字符串，用户从浏览器开发者工具的 Network 面板里任意 opencode.ai 请求的 Cookie 请求头复制。再加一个保存按钮和一段说明文案，说明该 cookie 仅存本地不会外发第三方。样式沿用现有 tokens.ts 的 t 对象和内联 style 风格，保持和其它组件一致。
+
+第二部分，Rust 侧 settings 命令。在 src-tauri 新增两个 tauri command：get_opencode_cookie 和 set_opencode_cookie。cookie 加密后存入本地 usage float 数据库的 settings 表，加密选型参考契约第5节，可以用 ring 的 aead 配机器绑定密钥，或用 Windows DPAPI，你选其一。
+
+第三部分，改 src-tauri/src/lib.rs 的 get_usage_data。从纯 mock 切换为：先尝试调用 collector 的本地采集，collector 的函数由 opencode agent 并行实现，在 src-tauri/src/collector/opencode.rs 里，函数名是 resolve_opencode_db、read_all_sessions、aggregate_local，你按契约第3节的签名调用，aggregate_local 产出 LocalAggregate，再映射成前端 UsageData。本地采集失败时回落 mock。配额部分本轮先占位，返回 mock 的百分比或标注缺失，待批次2接 API。
+
+注意：collector 库函数由 opencode agent 并行实现，你按契约签名调用即可。若调用时 collector 尚未实现，编译暂时失败属正常预期，验收合并后即通。不要改 web/src/providers/tauri-provider.ts，invoke 接口保持不变。把新命令注册到 invoke_handler。
+
+完成后在终端输出你改动的文件清单。遇到契约不清楚的地方，在输出里标注疑问，不要自行猜测。

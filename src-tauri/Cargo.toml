@@ -26,3 +26,9 @@ tauri-plugin-log = "2"
 # SQLite — bundled feature 内嵌 SQLite,免外部 DLL,满足"完全离线"安全要求。
 rusqlite = { version = "0.32", features = ["bundled"] }
 anyhow = "1"
+thiserror = "2"
+# ring: AEAD 加密 + 机器绑定密钥(cookie 加密存储)
+ring = { version = "0.17", features = [] }
+# reqwest: HTTP 客户端,占位供 opencode.ai API 启用;Phase 2 启用。
+# TODO: 待端点确认后启用,当前仅本地 SQLite 采集,reqwest 暂不激活。
+# reqwest = { version = "0.12", features = ["json"] }
