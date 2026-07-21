@@ -63,6 +63,12 @@ body,
   user-select: none;
 }
 
+/* 悬浮球窗口：背景透明以支持 Tauri 透明窗口 */
+[data-window="float"] body,
+[data-window="float"] #root {
+  background: transparent;
+}
+
 /* 滚动条 — Tauri 无边框窗口 */
 ::-webkit-scrollbar {
   width: 4px;

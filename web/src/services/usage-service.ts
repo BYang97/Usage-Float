@@ -10,7 +10,34 @@ export function setProvider(p: UsageProvider) {
   provider = p;
 }
 
+// ─── 缓存 ───────────────────────────────────────────────────────
+
 let cached: UsageData | null = null;
+
+export function refreshCache() {
+  cached = null;
+}
+
+// ─── 订阅/通知（数据变更时通知所有消费者） ─────────────────────
+
+type DataCallback = (data: UsageData) => void;
+let listeners: DataCallback[] = [];
+
+/** 订阅数据变更，返回取消订阅函数 */
+export function subscribe(cb: DataCallback): () => void {
+  listeners.push(cb);
+  return () => {
+    listeners = listeners.filter(l => l !== cb);
+  };
+}
+
+function notifyAll(data: UsageData) {
+  listeners.forEach(cb => {
+    try { cb(data); } catch (e) { console.error('[usage-service] 通知回调异常:', e); }
+  });
+}
+
+// ─── 核心数据获取 ───────────────────────────────────────────────
 
 export async function getUsageData(): Promise<UsageData> {
   if (!cached) {
@@ -19,9 +46,44 @@ export async function getUsageData(): Promise<UsageData> {
   return cached;
 }
 
-export function refreshCache() {
-  cached = null;
+/**
+ * 强制刷新并通知所有订阅者
+ * 相当于 refreshCache() + 重新获取 + notifyAll
+ */
+export async function refreshAndNotify(): Promise<UsageData> {
+  refreshCache();
+  const data = await provider.getUsageData();
+  cached = data;
+  notifyAll(data);
+  return data;
 }
+
+// ─── 自动刷新 ───────────────────────────────────────────────────
+
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+/** 启动定时刷新（自动跳过异常，不崩溃） */
+export function startAutoRefresh(intervalMs: number) {
+  stopAutoRefresh();
+  refreshTimer = setInterval(async () => {
+    try {
+      await refreshAndNotify();
+    } catch (err) {
+      console.error('[usage-service] 自动刷新失败:', err);
+      // 静默失败，下次重试
+    }
+  }, intervalMs);
+}
+
+/** 停止定时刷新 */
+export function stopAutoRefresh() {
+  if (refreshTimer !== null) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+}
+
+// ─── 便捷查询方法 ───────────────────────────────────────────────
 
 export async function getAccount() {
   const data = await getUsageData();
