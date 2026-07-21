@@ -1,4 +1,4 @@
-mod collector;
+pub mod collector;
 mod database;
 mod mock;
 mod models;

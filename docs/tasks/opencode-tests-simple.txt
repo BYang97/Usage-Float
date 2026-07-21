@@ -1,0 +1,14 @@
+你在 phase2-collector worktree。你之前实现了 src-tauri/src/collector/ 的 resolve_opencode_db、read_all_sessions、aggregate_local 三个函数。现在请只写本地 SQLite 采集的单元测试,放 src-tauri/tests/collector_test.rs。
+
+覆盖 7 个场景:
+1. 无 OpenCode 环境:resolve_opencode_db 返回 NotFound(临时清掉相关环境变量再测,或设 OPENCODE_DB 指向不存在的路径)。
+2. 数据为空:临时 db 的 session 表无行,aggregate_local 返回全零结构,不 panic。
+3. 数据损坏:临时文件非 SQLite,或 session 表缺列,read_all_sessions 返回 OpenFailed 或 QueryFailed。
+4. 多 session:插入多条样例,aggregate_local 正确累加 token,且按 model id 正确分组。
+5. 时间窗口分桶:给定固定 now_ms 和若干 time_created,验证 7 天 daily_history 桶归属正确。
+6. model JSON 解析:合法 JSON 的 model 列正常解析出 id 和 providerID;缺 variant 字段的 JSON 也能容错。
+7. model 为 NULL 的 session:read_all_sessions 不报错,该 session 的 token 仍被 aggregate 计入(容错)。
+
+用 tempfile crate 建临时目录和临时 db 文件,在里面建 session 表并插入样例行。测 resolve_opencode_db 时用 std::env::set_var 设 OPENCODE_DB 环境变量指向临时 db,测完用 std::env::remove_var 清理。dev-dependencies 段加 tempfile。
+
+只测本地采集,不要写 API mock 测试,不要用 httpmock crate。完成后运行 cargo test --offline,把结果贴出来。

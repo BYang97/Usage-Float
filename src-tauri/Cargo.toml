@@ -32,3 +32,6 @@ ring = { version = "0.17", features = [] }
 # reqwest: HTTP 客户端,占位供 opencode.ai API 启用;Phase 2 启用。
 # TODO: 待端点确认后启用,当前仅本地 SQLite 采集,reqwest 暂不激活。
 # reqwest = { version = "0.12", features = ["json"] }
+
+[dev-dependencies]
+tempfile = "3"
