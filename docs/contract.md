@@ -1,145 +1,174 @@
 # Collector 接口契约
 
-> 本文件是测试(omp)与实现(opencode)、接线(pi)的共同依据。任何字段、签名、行为变更须先改本文件。
+> 本文件是测试(omp)、实现(opencode)、接线(pi)的共同依据。任何字段、签名、行为变更须先改本文件。
 > Phase 2 验收以本文件 + omp 编写的测试用例为准。
 > 数据格式事实依据见 [opencode-data-format.md](./opencode-data-format.md)。
 
-## 0. 范围
+## 0. 范围与双数据源
 
-Phase 2 collector 的目标:从本地 OpenCode SQLite 数据库读取用量,聚合成前端 `UsageData` 所需结构,经 Tauri command 返回。
+Phase 2 collector 的目标:组合两个数据源,聚合成前端 `UsageData`,经 Tauri command 返回。
 
-**重要事实(来自调研)**:OpenCode 本地只有累计 `cost` + 5 类 token + `time_created` 时间戳,**没有 5h/weekly/monthly 配额周期概念**。这些周期是 provider 侧规则(Anthropic 计划 / OpenCode 托管 plan)。见第 7 节的已知缺口与处理策略。
+| 数据源 | 取什么 | 怎么取 | 是否联网 |
+|---|---|---|---|
+| **本地 OpenCode SQLite** | 累计 token、cost、按 model 分组、按天历史 | rusqlite 只读 `opencode.db` | 离线 |
+| **opencode.ai API** | 真实 5h/weekly/monthly 配额(已用/上限/重置)、plan/status/到期 | reqwest 带 auth cookie | 联网(仅官方域) |
 
-## 1. OpenCode 数据源
+**关键事实**:OpenCode 本地只有累计 token + 时间戳,**无配额周期**;5h/周/月配额在 opencode.ai 托管 plan(provider `opencode`/`opencode-go`)服务端。配额必须经 API 取。
 
-- 文件:本地 SQLite,默认 `opencode.db`(渠道变体 `opencode-beta.db` / `opencode-latest.db`)。
+**安全边界**(修订规划第 5 章):
+- auth cookie 由**用户主动在设置面板粘贴**(collector 绝不读取浏览器)。
+- cookie 仅存本地(`settings` 表,加密),**仅发往 `opencode.ai` 官方域**,**不外发任何第三方**。
+- 无 cookie 或 API 不可达时,优雅降级(配额百分比缺失,token 累计仍正常显示)。
+- 本地 SQLite 读取始终离线,不依赖网络。
+
+## 1. 本地 OpenCode SQLite 数据源
+
+- 文件:本地 SQLite,默认 `opencode.db`(渠道变体 `opencode-beta.db`/`opencode-latest.db`)。
 - 目录解析优先级:
   1. 环境变量 `OPENCODE_DB`(绝对路径直接用;相对则相对 data 目录)
-  2. `<XDG_DATA_HOME>/opencode/`(或默认 `~/.local/share/opencode`;Windows 为 `%USERPROFILE%\.local\share\opencode`)
+  2. `<XDG_DATA_HOME>/opencode/`(默认 `~/.local/share/opencode`;Windows 为 `%USERPROFILE%\.local\share\opencode`)
   3. 在上述目录按渠道找 `opencode[-channel].db`
 - 打开方式:只读,WAL 兼容(rusqlite `OpenFlags::SQLITE_OPEN_READ_ONLY`)。**绝不写回 OpenCode 的 db**。
+- 读 session 表预聚合列(见 [opencode-data-format.md](./opencode-data-format.md) 第 3.1 节)。
 
-## 2. Collector 函数签名(Rust)
+## 2. opencode.ai API 数据源(配额)
+
+> **端点与响应格式待 [opencode.ai API 调研] 补完**(进行中)。本节先定抽象接口,端点/字段确认后回填。
+
+- 认证:`Cookie: auth=<Fe26.2**...>`(用户从浏览器 DevTools 的 opencode.ai 请求 Cookie 头复制粘贴)。
+- 客户端:reqwest,仅请求 `opencode.ai` 域,设合理超时(如 10s),失败降级不 panic。
+- 取得:5h/weekly/monthly 的已用 token / 上限 / 重置时间;plan 名称 / status / 到期日;按 model 用量(若 API 提供)。
+- 缓存:结果写入本地 `quota` 表,避免每次 invoke 都打 API(带 `updated_at`,超过刷新间隔才重取)。
+
+```rust
+// src-tauri/src/collector/api.rs
+pub struct OpenCodeApiClient {
+    cookie: String,        // 用户粘贴的 auth cookie
+    // 端点常量待调研回填
+}
+impl OpenCodeApiClient {
+    pub fn new(cookie: String) -> Self;
+    /// 取真实配额(5h/周/月 + 重置)。失败返回 Err,由上层降级。
+    pub async fn fetch_quota(&self) -> Result<ApiQuota, CollectorError>;
+    /// 取账户信息(plan/status/到期)。失败返回 Err。
+    pub async fn fetch_account(&self) -> Result<ApiAccount, CollectorError>;
+}
+```
+
+```rust
+// src-tauri/src/collector/model.rs (API 侧结构,字段待调研回填)
+pub struct ApiQuota {
+    pub five_hour:  ApiWindow,   // 已用/上限/重置(来自 API)
+    pub weekly:     ApiWindow,
+    pub monthly:    ApiWindow,
+}
+pub struct ApiWindow {
+    pub used: Option<i64>,
+    pub limit: Option<i64>,
+    pub reset_at: Option<String>,   // 重置时间,格式待定
+}
+pub struct ApiAccount {
+    pub plan: Option<String>,
+    pub status: Option<String>,
+    pub expire_date: Option<String>,
+}
+```
+
+## 3. Collector 函数签名(Rust)
 
 ```rust
 // src-tauri/src/collector/opencode.rs
 
 use std::path::PathBuf;
 use crate::collector::error::CollectorError;
-use crate::collector::model::{RawSessionUsage, UsageAggregate, ModelBreakdown};
+use crate::collector::model::*;
 
-/// 解析 OpenCode 数据目录候选路径(按第 1 节优先级)。
-/// 返回找到的第一个存在的 db 文件路径;都没有则 Err(NotFound)。
+/// 解析 OpenCode 本地 db 路径(按第 1 节优先级)。都没有则 Err(NotFound)。
 pub fn resolve_opencode_db() -> Result<PathBuf, CollectorError>;
 
-/// 读取所有 session 的预聚合用量(直接读 session 表,不遍历 message)。
+/// 读取所有 session 预聚合用量(直接读 session 表)。失败返回 Result,不 panic。
 pub fn read_all_sessions(db_path: &PathBuf) -> Result<Vec<RawSessionUsage>, CollectorError>;
 
-/// 将原始 session 用量聚合成前端所需结构(按时间窗口分桶 + 按 model 分组)。
-pub fn aggregate(raw: &[RawSessionUsage], now_ms: i64) -> UsageAggregate;
+/// 本地用量聚合:按时间窗口分桶(5h/7d/30d)+ 按 model 分组 + 逐日历史。
+pub fn aggregate_local(raw: &[RawSessionUsage], now_ms: i64) -> LocalAggregate;
 ```
 
-`resolve_opencode_db` + `read_all_sessions` 失败时**返回 Result,不 panic**(规划第 4 章代码规范)。
+命令层组合两个数据源:
+```rust
+// src-tauri/src/lib.rs (pi 实现)
+#[tauri::command]
+async fn get_usage_data(state: State<AppState>) -> Result<UsageData, String> {
+    // 1. 本地 SQLite 采集(始终尝试,失败回落零值)
+    // 2. 若 settings 有 cookie:调 opencode.ai API 取配额 + 账户(失败降级:仅展示 token)
+    // 3. 合并成本地 token + API 配额 → UsageData
+    // 4. 任何失败都回落到 mock,前端永远收到有效 UsageData
+}
+```
 
-## 3. 数据结构
+## 4. 数据结构
 
 ```rust
 // src-tauri/src/collector/model.rs
 
-/// 单个 session 的原始用量(对应 session 表一行)。
+/// 单个 session 原始用量(session 表一行)。
 pub struct RawSessionUsage {
     pub session_id: String,
-    pub model_id: String,         // session.model 的 id(JSON 解出)
-    pub provider_id: String,      // session.model 的 providerID
+    pub model_id: String,        // session.model JSON 的 id
+    pub provider_id: String,
     pub cost: f64,
-    pub tokens_input: i64,        // 非缓存输入
+    pub tokens_input: i64,       // 非缓存输入
     pub tokens_output: i64,
     pub tokens_reasoning: i64,
     pub tokens_cache_read: i64,
     pub tokens_cache_write: i64,
-    pub time_created: i64,        // epoch ms
+    pub time_created: i64,       // epoch ms
 }
 
-/// 聚合结果 —— 由 collector 产出,再由 Tauri command 映射成前端 UsageData。
-pub struct UsageAggregate {
+/// 本地聚合结果(token 来自 SQLite)。
+pub struct LocalAggregate {
+    pub total_tokens: i64,        // input+output+reasoning+cache.read+cache.write
     pub total_cost: f64,
-    pub total_tokens: i64,        // input + output + reasoning + cache.read + cache.write
-    pub window_5h: WindowStat,    // 最近 5 小时
-    pub window_weekly: WindowStat,// 最近 7 天
-    pub window_monthly: WindowStat,// 最近 30 天(本月)
-    pub daily_history: Vec<DayBucket>, // 近 7 天每日 token,供折线图
+    pub daily_history: Vec<DayBucket>,   // 近 7 天,供折线图
     pub models: Vec<ModelBreakdown>,
 }
-
-pub struct WindowStat {
-    pub tokens: i64,
-    pub session_count: usize,
-}
-
-pub struct DayBucket {
-    pub date: String,   // "周一" 等,或 ISO 日期,前端再格式化
-    pub tokens: f64,    // 折线图用 M 单位
-}
-
-pub struct ModelBreakdown {
-    pub name: String,
-    pub percentage: f64,
-    pub color: String,
-}
+pub struct DayBucket { pub date: String, pub tokens: f64 }   // 折线图 M 单位
+pub struct ModelBreakdown { pub name: String, pub percentage: f64, pub color: String }
 ```
 
-> 注:规划文档原始 `UsageRecord { model, input, output, total }` 字段更少,这里扩展为 5 类 token + cost + 时间戳,以匹配真实 OpenCode schema。前端 `UsageData`(见 `web/src/types/index.ts`)结构不变。
+> 前端 `UsageData`(见 `web/src/types/index.ts`)结构不变。Rust 命令层负责把 `LocalAggregate` + `ApiQuota` + `ApiAccount` 合并映射成 `UsageData`。
 
-## 4. SQLite Schema(本项目自用,非 OpenCode 的)
+## 5. SQLite Schema(本项目自用 `usage-float.db`)
 
-本项目缓存库 `usage-float.db`(见 `src-tauri/src/database.rs`),Phase 3 建表。三表:
+Phase 3 建表。Phase 2 需 `settings` 存 cookie:
 
 ```sql
--- account: 订阅/计划信息(Phase 2 暂用占位,真实数据需 provider 侧)
+-- settings: KV 设置,存 auth cookie(加密)
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value BLOB,            -- cookie 等敏感值加密存储
+    updated_at INTEGER
+);
+
+-- account: 订阅信息(来自 opencode.ai API,带缓存)
 CREATE TABLE IF NOT EXISTS account (
     id INTEGER PRIMARY KEY,
-    plan TEXT,
-    status TEXT,           -- active | expired | error
-    expire_date TEXT,
-    updated_at INTEGER
+    plan TEXT, status TEXT, expire_date TEXT, updated_at INTEGER
 );
 
--- quota: 时间窗口用量缓存(collector 按周期刷新)
+-- quota: 时间窗口配额缓存(来自 API,按刷新间隔重取)
 CREATE TABLE IF NOT EXISTS quota (
-    window TEXT PRIMARY KEY,  -- '5h' | 'weekly' | 'monthly'
-    tokens INTEGER,
-    percent REAL,
-    reset_at TEXT,
-    updated_at INTEGER
+    window TEXT PRIMARY KEY,   -- '5h'|'weekly'|'monthly'
+    used INTEGER, limit INTEGER, percent REAL, reset_at TEXT, updated_at INTEGER
 );
 
--- usage: 按 session / 按 day 的用量明细(供历史折线图)
+-- usage: 按 day/model 用量明细(来自本地 SQLite,供历史折线图)
 CREATE TABLE IF NOT EXISTS usage (
-    day TEXT,              -- ISO date
-    model TEXT,
-    tokens INTEGER,
-    cost REAL,
+    day TEXT, model TEXT, tokens INTEGER, cost REAL,
     PRIMARY KEY (day, model)
 );
 ```
 
-## 5. Tauri Command 接口
-
-Phase 1 已有 `get_usage_data`(返回 mock)。Phase 2 改为:
-
-```rust
-#[tauri::command]
-fn get_usage_data() -> Result<UsageData, String> {
-    // 1. resolve_opencode_db() —— 失败则回落 mock(无 OpenCode 环境)
-    // 2. read_all_sessions()
-    // 3. aggregate()
-    // 4. 映射成 UsageData(含 daily_history → tokenHistory, models → models)
-    // 5. 失败优雅回落 mock,不向前端抛错
-}
-```
-
-前端 invoke 不变:`invoke<UsageData>('get_usage_data')`。
-pi 负责:把 `get_usage_data` 从 mock 切换到调用 collector,并把 mock 作为 fallback。
+cookie 加密:Windows 用 DPAPI(`crypt32`)或项目级密钥;Phase 2 初版可用 `ring` + 机器绑定密钥,具体由 opencode 选型。
 
 ## 6. 错误类型
 
@@ -147,49 +176,70 @@ pi 负责:把 `get_usage_data` 从 mock 切换到调用 collector,并把 mock �
 // src-tauri/src/collector/error.rs
 #[derive(Debug)]
 pub enum CollectorError {
-    NotFound,              // 找不到 OpenCode 数据目录 / db 文件
-    OpenFailed(String),   // 打开 db 失败(权限/损坏)
-    QueryFailed(String),  // SQL 查询失败(schema 不符/损坏)
-    ParseFailed(String),  // model JSON 解析失败
+    NotFound,                // 找不到 OpenCode 数据目录 / db
+    OpenFailed(String),      // 打开 db 失败(权限/损坏)
+    QueryFailed(String),     // SQL 查询失败(schema 不符)
+    ParseFailed(String),     // model JSON 解析失败
+    NoCookie,                // 用户未设置 auth cookie(API 功能不可用,非致命)
+    ApiError(String),        // opencode.ai API 请求失败(网络/5xx)
+    Unauthorized,            // cookie 失效/过期(API 返回 401)
 }
 ```
 
-命令层捕获 `CollectorError` 后**回落 mock**,前端永远收到有效 `UsageData`(规划第 6 章测试场景"无 OpenCode 环境/数据为空")。
+命令层捕获后**降级而非抛错**:本地失败→mock;API 失败→仅展示 token(配额缺失);任何情况前端收到有效 `UsageData`。
 
-## 7. 已知缺口:配额周期(5h / weekly / monthly)
+## 7. 配额周期处理(已定方向)
 
-**问题**:UI 设计规范要求显示"5小时额度 82% / 本周 63% / 本月 45%"百分比 + 重置倒计时。但 OpenCode 本地无配额周期数据,只有累计 token + 时间戳。
+- 5h/周/月**真实配额**(已用/上限/重置)来自 opencode.ai API(第 2 节),**不是**本地分桶。
+- 本地 SQLite 提供:累计 token、逐日历史、按 model 分组。
+- 无 cookie / API 不可达:配额百分比与重置倒计时缺失(前端显示"未连接"/"—"),token 数据仍真实。
 
-**初版策略(Phase 2 采用)**:
-- 窗口 token:collector 用 `time_created` 分桶统计最近 5h / 7天 / 30天 的 token 用量(真实,来自本地)。
-- 百分比:Phase 2 **无法从本地得到真实配额上限**。初版用可配置的"假定上限"(如月度假定上限来自设置项),或暂沿用 mock 百分比并标注"估算"。
-- 重置倒计时:5h 窗口可由"最早一条仍在 5h 窗内的 session 时间戳"推算近似重置;weekly/monthly 用自然周/自然月边界。初版为占位字符串。
+## 8. 测试场景清单(规划第 6 章 + API 场景)
 
-**后续选项(留待决策,不阻塞 Phase 2)**:
-- (a) 接入 provider quota API(需用户授权 provider 凭证,偏离"完全离线"原则)。
-- (b) 用户在设置里自填配额上限,collector 用真实用量 / 用户上限算百分比。
-- (c) 仅展示"累计用量"而不展示百分比,UI 调整。
+omp 按此清单编写测试,opencode/pi 的实现须全部通过:
 
-## 8. 测试场景清单(规划第 6 章)
+**本地 SQLite 采集:**
+- [ ] 无 OpenCode 环境:`resolve_opencode_db()` 返回 `NotFound`,命令回落 mock。
+- [ ] 数据为空:db 存在但 session 表无行,`aggregate_local` 返回全零结构(非 panic)。
+- [ ] 数据损坏:db 非 SQLite / schema 缺列,`OpenFailed`/`QueryFailed`,命令回落 mock。
+- [ ] 多 session:`aggregate_local` 正确累加,按 model 正确分组。
+- [ ] 时间窗口分桶:给定固定 `now_ms` 和若干 `time_created`,验证 7d/30d 桶归属正确。
+- [ ] Windows 权限:目录存在但无读权限,`OpenFailed`,命令降级不崩溃。
+- [ ] model JSON 解析:合法/缺 variant 的 JSON,`ParseFailed` 容错。
 
-omp 按此清单编写测试,opencode 的实现须全部通过:
-
-- [ ] 无 OpenCode 环境:`resolve_opencode_db()` 返回 `NotFound`,命令回落 mock,前端拿到 mock `UsageData`。
-- [ ] 数据为空:db 存在但 session 表无行,`aggregate` 返回全零结构(非 panic、非空指针)。
-- [ ] 数据损坏:db 文件非 SQLite / schema 缺列,`OpenFailed` 或 `QueryFailed`,命令回落 mock。
-- [ ] 多 session:`aggregate` 正确累加多个 session 的 token,按 model 正确分组。
-- [ ] 时间窗口分桶:给定固定 `now_ms` 和若干 `time_created`,验证 5h/7d/30d 桶归属正确。
-- [ ] Windows 权限:目录存在但无读权限,`OpenFailed`,命令回落 mock(不崩溃)。
-- [ ] model JSON 解析:session.model 为合法/缺失 variant 的 JSON,`ParseFailed` 容错。
+**opencode.ai API(用 mock HTTP server 测试):**
+- [ ] 有 cookie 且 API 返回配额:`fetch_quota` 正确解析成 `ApiQuota`,合并进 `UsageData`。
+- [ ] 无 cookie:`NoCookie`,配额缺失,token 正常,前端拿到 token-only `UsageData`。
+- [ ] cookie 失效(401):`Unauthorized`,配额缺失,token 正常。
+- [ ] API 超时/5xx:`ApiError`,降级,token 正常。
+- [ ] 配额缓存:重复 invoke 在刷新间隔内不重复打 API(读 `quota` 表)。
 
 ## 9. 文件归属
 
 | 文件 | 负责 agent | 职责 |
 |---|---|---|
-| `src-tauri/src/collector/opencode.rs` | opencode | `resolve_opencode_db` / `read_all_sessions` / `aggregate` 实现 |
-| `src-tauri/src/collector/model.rs` | opencode | 第 3 节数据结构 |
+| `src-tauri/src/collector/opencode.rs` | opencode | 本地:`resolve_opencode_db`/`read_all_sessions`/`aggregate_local` |
+| `src-tauri/src/collector/api.rs` | opencode | opencode.ai API 客户端(端点待调研回填) |
+| `src-tauri/src/collector/model.rs` | opencode | 第 4 节 + 第 2 节 API 侧数据结构 |
 | `src-tauri/src/collector/error.rs` | opencode | 第 6 节错误类型 |
-| `src-tauri/src/lib.rs` | pi | `get_usage_data` 从 mock 切换到 collector + fallback |
-| `src-tauri/src/database.rs` | opencode | 第 4 节 schema 建表(Phase 3 接续) |
+| `src-tauri/src/database.rs` | opencode | 第 5 节 schema + cookie 加密存储 |
+| `src-tauri/src/lib.rs` | pi | `get_usage_data` 组合双数据源 + fallback;settings 读写命令 |
 | `web/src/providers/tauri-provider.ts` | pi | 不变(invoke 接口一致) |
-| `src-tauri/tests/` 或 `src-tauri/src/collector/` 内 `#[cfg(test)]` | omp | 第 8 节测试用例 |
+| `web/src/pages/Settings.tsx` | pi | 新增 auth cookie 粘贴框 |
+| 测试 | omp | 第 8 节全部场景(本地用真实临时 db,API 用 mock HTTP server) |
+
+## 10. 分派批次
+
+为最大化并行且不被 API 端点调研阻塞:
+
+**批次 1(立即可并行,不依赖 API 端点):**
+- omp:写本地 SQLite 采集的测试场景(第 8 节前 7 项)+ API 测试骨架(用 mock server,端点占位)。
+- opencode:实现本地 SQLite 采集(`opencode.rs`/`model.rs`/`error.rs`)+ `database.rs` schema。
+- pi:前端 Settings 加 cookie 粘贴框 + Rust 侧 settings 命令 + `get_usage_data` 接本地采集(配额暂占位)。
+
+**批次 2(待 opencode.ai API 调研返回):**
+- opencode 续:实现 `api.rs` 客户端(按调研回填的端点/字段)。
+- pi 续:`get_usage_data` 接入 API 配额,替换占位。
+- omp 续:补完 API 测试的端点断言。
+
+合并验收(任务 #7)在批次 2 完成后进行。
