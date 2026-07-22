@@ -7,14 +7,18 @@ interface Props { onNavigate: (page: string) => void }
 
 export function Settings({ onNavigate }: Props) {
   const [cookie, setCookie] = useState('');
+  const [workspaceId, setWorkspaceId] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // 尝试加载已保存的 cookie
+    // 尝试加载已保存的 cookie + workspace_id
     invoke<string>('get_opencode_cookie')
       .then(val => { if (val) setCookie(val); })
       .catch(() => { /* ignore, cookie not set */ });
+    invoke<string>('get_opencode_workspace_id')
+      .then(val => { if (val) setWorkspaceId(val); })
+      .catch(() => { /* ignore, workspace_id not set */ });
   }, []);
 
   const handleSave = async () => {
@@ -22,6 +26,7 @@ export function Settings({ onNavigate }: Props) {
     setError('');
     try {
       await invoke('set_opencode_cookie', { cookie });
+      await invoke('set_opencode_workspace_id', { workspaceId });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e: any) {
@@ -90,8 +95,28 @@ export function Settings({ onNavigate }: Props) {
           <Section title="OpenCode Go 认证">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <p style={{ margin: 0, fontSize: 12, color: t.textSecondary, lineHeight: 1.5 }}>
-                从浏览器开发者工具的 Network 面板中，复制任意 opencode.ai 请求的 <code style={{ color: t.accentBlue }}>Cookie</code> 请求头，粘贴到下方文本框。该 cookie 仅保存于本机，不会发送给任何第三方。
+                登录 opencode.ai 后,从浏览器 DevTools Application 面板复制 <code style={{ color: t.accentBlue }}>auth</code> cookie 值(以 Fe26. 开头),粘贴到下方。该 cookie 仅保存于本机,不会发送给任何第三方。
               </p>
+              <div>
+                <label style={{ fontSize: 12, color: t.textSecondary, display: 'block', marginBottom: 4 }}>Workspace ID</label>
+                <input
+                  value={workspaceId}
+                  onChange={e => { setWorkspaceId(e.target.value); setSaved(false); }}
+                  placeholder="wrk_xxxxxxxx(从 opencode.ai 工作区 URL 获取)"
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    border: `1px solid ${t.surfaceBorder}`,
+                    background: t.surface,
+                    color: t.textPrimary,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    outline: 'none',
+                  }}
+                />
+              </div>
               <textarea
                 value={cookie}
                 onChange={e => { setCookie(e.target.value); setSaved(false); }}

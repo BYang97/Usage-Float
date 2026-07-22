@@ -56,7 +56,7 @@ pub fn init_schema(db_path: &Path) -> Result<(), CollectorError> {
     Ok(())
 }
 
-// ===== Cookie 加密存储 =====
+// ===== Cookie / workspace_id 加密存储 =====
 // 选型: ring AEAD AES-256-GCM + 机器绑定密钥(COMPUTERNAME / HOSTNAME 派生).
 // Windows DPAPI 为备选,当前用 ring 实现以保持跨平台一致。
 
@@ -164,6 +164,7 @@ pub fn set_setting(conn: &Connection, key: &str, value: &str) -> Result<(), Coll
 }
 
 const COOKIE_KEY_NAME: &str = "opencode_auth_cookie";
+const WORKSPACE_KEY_NAME: &str = "opencode_workspace_id";
 
 /// 打开本地数据库(读写),确保目录与四表 schema 存在,返回连接。
 pub fn open_db(app_data_dir: &std::path::PathBuf) -> Result<Connection, CollectorError> {
@@ -188,20 +189,23 @@ pub fn set_opencode_cookie(conn: &Connection, cookie: &str) -> Result<(), Collec
     set_setting(conn, COOKIE_KEY_NAME, cookie)
 }
 
+/// 读取并解密 OpenCode workspace ID(格式 wrk_xxx)。
+pub fn get_opencode_workspace_id(conn: &Connection) -> Result<Option<String>, CollectorError> {
+    get_setting(conn, WORKSPACE_KEY_NAME)
+}
+
+/// 加密存储 OpenCode workspace ID。
+pub fn set_opencode_workspace_id(conn: &Connection, workspace_id: &str) -> Result<(), CollectorError> {
+    set_setting(conn, WORKSPACE_KEY_NAME, workspace_id)
+}
+
 // ===== 配额/账户缓存读写(quota + account 表) =====
 /// 缓存刷新间隔(5 分钟)。
 pub const CACHE_TTL_MS: i64 = 300_000;
 
-/// 配额缓存行。
-struct QuotaRow {
-    used: Option<i64>,
-    limit_val: Option<i64>,
-    reset_at: Option<String>,
-    updated_at: i64,
-}
-
-/// 从 quota 表读指定窗口的缓存。返回 None 表示无缓存或已过期。
-pub fn get_quota_cache(conn: &Connection, window: &str) -> Result<Option<(i64, Option<i64>, Option<String>)>, CollectorError> {
+/// 从 quota 表读指定窗口缓存。返回 (usage_percent, reset_in_sec),None 表示无缓存或已过期。
+/// 复用 quota 表:percent 列存 usage_percent,reset_at 列存 reset_in_sec 的字符串。
+pub fn get_quota_cache(conn: &Connection, window: &str) -> Result<Option<(f64, i64)>, CollectorError> {
     use rusqlite::OptionalExtension;
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -209,60 +213,52 @@ pub fn get_quota_cache(conn: &Connection, window: &str) -> Result<Option<(i64, O
         .as_millis() as i64;
 
     let mut stmt = conn
-        .prepare("SELECT used, limit, reset_at, updated_at FROM quota WHERE window = ?1")
+        .prepare("SELECT percent, reset_at, updated_at FROM quota WHERE window = ?1")
         .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
 
-    let row: Option<QuotaRow> = stmt
+    let row: Option<(Option<f64>, Option<String>, i64)> = stmt
         .query_row(params![window], |row| {
-            Ok(QuotaRow {
-                used: row.get(0)?,
-                limit_val: row.get(1)?,
-                reset_at: row.get(2)?,
-                updated_at: row.get(3)?,
-            })
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
         })
         .optional()
         .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
 
     match row {
-        Some(r) if now - r.updated_at < CACHE_TTL_MS => {
-            Ok(Some((r.used.unwrap_or(0), r.limit_val, r.reset_at)))
+        Some((pct, reset_at, updated_at)) if now - updated_at < CACHE_TTL_MS => {
+            let usage_percent = pct.unwrap_or(0.0);
+            let reset_in_sec = reset_at
+                .and_then(|s| s.parse::<i64>().ok())
+                .unwrap_or(0);
+            Ok(Some((usage_percent, reset_in_sec)))
         }
         _ => Ok(None),
     }
 }
 
-/// 写入配额缓存(三个窗口)。
+/// 写入配额缓存。percent=usage_percent,reset_at=reset_in_sec 字符串。
 pub fn set_quota_cache(
     conn: &Connection,
     window: &str,
-    used: Option<i64>,
-    limit_val: Option<i64>,
-    reset_at: Option<&str>,
+    usage_percent: f64,
+    reset_in_sec: i64,
 ) -> Result<(), CollectorError> {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis() as i64;
 
-    let used_int = used.unwrap_or(0);
-    let pct = match (used, limit_val) {
-        (Some(u), Some(l)) if l > 0 => (u as f64 / l as f64) * 100.0,
-        _ => 0.0,
-    };
-
     conn.execute(
         "INSERT OR REPLACE INTO quota (window, used, limit, percent, reset_at, updated_at) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![window, used_int, limit_val, pct, reset_at, now],
+         VALUES (?1, NULL, NULL, ?2, ?3, ?4)",
+        params![window, usage_percent, reset_in_sec.to_string(), now],
     )
     .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
 
     Ok(())
 }
 
-/// 从 account 表读取缓存。返回 None 表示无缓存或已过期。
-pub fn get_account_cache(conn: &Connection) -> Result<Option<(String, String, Option<String>)>, CollectorError> {
+/// 从 account 表读取 plan 缓存。None 表示无缓存或已过期。
+pub fn get_account_cache(conn: &Connection) -> Result<Option<String>, CollectorError> {
     use rusqlite::OptionalExtension;
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -270,36 +266,22 @@ pub fn get_account_cache(conn: &Connection) -> Result<Option<(String, String, Op
         .as_millis() as i64;
 
     let mut stmt = conn
-        .prepare("SELECT plan, status, expire_date, updated_at FROM account WHERE id = 1")
+        .prepare("SELECT plan, updated_at FROM account WHERE id = 1")
         .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
 
-    let row: Option<(String, String, Option<String>, i64)> = stmt
-        .query_row([], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, Option<String>>(2)?,
-                row.get::<_, i64>(3)?,
-            ))
-        })
+    let row: Option<(Option<String>, i64)> = stmt
+        .query_row([], |row| Ok((row.get(0)?, row.get(1)?)))
         .optional()
         .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
 
     match row {
-        Some((plan, status, expire_date, updated_at)) if now - updated_at < CACHE_TTL_MS => {
-            Ok(Some((plan, status, expire_date)))
-        }
+        Some((plan, updated_at)) if now - updated_at < CACHE_TTL_MS => Ok(plan),
         _ => Ok(None),
     }
 }
 
-/// 写入账户缓存。
-pub fn set_account_cache(
-    conn: &Connection,
-    plan: &str,
-    status: &str,
-    expire_date: Option<&str>,
-) -> Result<(), CollectorError> {
+/// 写入账户缓存(仅 plan,status/expire 暂缺)。
+pub fn set_account_cache(conn: &Connection, plan: &str) -> Result<(), CollectorError> {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
@@ -307,8 +289,8 @@ pub fn set_account_cache(
 
     conn.execute(
         "INSERT OR REPLACE INTO account (id, plan, status, expire_date, updated_at) \
-         VALUES (1, ?1, ?2, ?3, ?4)",
-        params![plan, status, expire_date, now],
+         VALUES (1, ?1, NULL, NULL, ?2)",
+        params![plan, now],
     )
     .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
 

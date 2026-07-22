@@ -43,25 +43,29 @@ pub struct ModelBreakdown {
     pub color: String,
 }
 
-// ===== opencode.ai API 侧占位结构(第 2 节) =====
-// TODO: 待端点确认后回填字段与反序列化逻辑。
+// ===== opencode.ai Go 套餐配额(从 Go 页面 HTML 解析) =====
+// 端点:opencode.ai/workspace/{workspaceId}/go(HTML 页面)
+// 数据在 React Server Component flight 序列化里:rollingUsage:$R[N]={usagePercent,resetInSec}
 
+/// 单个配额窗口(rolling/weekly/monthly)。
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiWindow {
+    pub usage_percent: f64,
+    pub reset_in_sec: i64,
+}
+
+/// Go 套餐配额(三窗口 + plan)。
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiQuota {
-    pub five_hour: ApiWindow,
+    pub five_hour: ApiWindow, // rolling 窗口
     pub weekly: ApiWindow,
     pub monthly: ApiWindow,
+    pub plan: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ApiWindow {
-    pub used: Option<i64>,
-    pub limit: Option<i64>,
-    pub reset_at: Option<String>,
-}
-
+/// 账户信息。当前仅 plan 从 Go 页面提取,status/expire 暂缺(端点未确认)。
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiAccount {

@@ -30,7 +30,11 @@ thiserror = "2"
 # ring: AEAD 加密 + 机器绑定密钥(cookie 加密存储)
 ring = { version = "0.17", features = [] }
 # reqwest: HTTP 客户端,用于 opencode.ai API(配额查询)。
-reqwest = { version = "0.12", features = ["json"] }
+# rustls-tls 替代默认 native-tls(schannel),避免 Windows 代理 MITM 下 TLS 握手失败。
+# system-proxy 读 HTTP_PROXY/HTTPS_PROXY/ALL_PROXY 环境变量走代理。
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "charset", "http2", "system-proxy"] }
+# regex: 解析 opencode.ai Go 页面的 React Server Component flight 数据。
+regex = "1"
 
 [dev-dependencies]
 tempfile = "3"

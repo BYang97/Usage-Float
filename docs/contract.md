@@ -33,46 +33,49 @@ Phase 2 collector 的目标:组合两个数据源,聚合成前端 `UsageData`,�
 
 ## 2. opencode.ai API 数据源(配额)
 
-> **端点已确认**(2026-07-21 调研完成,逆向 Console 源码)。
+> **端点已确认**(2026-07-22 重新调研,参考 [opencode-go-dashboard](https://github.com/Ruinique/opencode-go-dashboard) + 真实 cookie 验证)。
+> **旧方案(`console.opencode.ai/api/*` JSON API)已废弃** -- 真实请求全 401(端点不存在 / cookie 域不匹配)。配额数据在 opencode.ai 工作区页面的 React Server Component flight 数据里,不是独立 JSON API。
 
-- **Base URL**: `https://console.opencode.ai`
-- **认证**: `Cookie: auth=<Fe26.2**...>`(用户从浏览器 DevTools 复制)。
-- **客户端**: reqwest(json feature),限 `console.opencode.ai` 域,10s 超时。
+- **端点**: `GET https://opencode.ai/workspace/{workspaceId}/go`(HTML 页面)
+- **认证**: `Cookie: auth=<Fe26.2**...>`(用户从浏览器 DevTools Application 面板复制)
+- **必需参数**: `workspaceId`(`wrk_xxx`,从 opencode.ai 工作区 URL 获取,用户在设置面板粘贴)
+- **客户端**: reqwest(rustls-tls,避开 Windows schannel 代理 MITM 握手失败),15s 超时,User-Agent 伪装浏览器
+- **响应**: HTML,含 React Server Component flight 序列化数据:
+  ```
+  rollingUsage:$R[N]={status:"ok",usagePercent:1,resetInSec:7828}
+  weeklyUsage:$R[N]={status:"ok",usagePercent:0,resetInSec:375487}
+  monthlyUsage:$R[N]={status:"ok",usagePercent:87,resetInSec:481129}
+  plan:$R[N]="go-monthly"
+  ```
 
-### 端点清单
+### 解析方式
 
-| 端点 | 方法 | 响应结构(Console 源码确认) | 用途 | 实施 |
-|---|---|---|---|---|
-| `/api/budgets/org` | GET | `OrgSpendCheck{ limitMicroCents, spentMicroCents, exceeded, resetsAt }` | 配额(已用/上限/重置) | `fetch_quota()` ✅ |
-| `/api/billing/status` | GET | `BillingStatus{ billingMode, managedInferenceStatus, balanceMicroCents, ... }` | plan + status | `get_billing_status()` ✅ |
-| `/api/billing/seat-billing` | GET | `SeatOverview{ subscription{ renewalAt }, currentPeriod{ endsAt } }` | 订阅到期日 | `get_expire_date()` ✅ |
-| `/api/billing/account` | GET | `BillingAccount{ orgId, creditLimitMicroCents, ... }` | 账户详情(备选) | 未使用 |
-| `/api/budgets/users/status` | GET | `UserBudgetStatus[]{ email, limitMicroCents, spentMicroCents, exceeded, resetsAt, source }` | 用户级多窗口(备选) | 预留 |
+正则提取(非 JSON 反序列化,因为 flight 数据的 key 无引号,不是合法 JSON):
+- `{key}:$R[\d+]=({[^}]+})` -> 提取 `{...}` 对象,再正则取 `usagePercent` / `resetInSec`
+- `rollingUsage` / `weeklyUsage` / `monthlyUsage` 各自独立提取
+- `plan:$R[\d+]="([^"]+)"` -> plan 名称
 
-### 关键发现: 5h/weekly/monthly 三窗口
+### 三窗口(已分开,非共享)
 
-这三窗口**不是独立 API 端点**,而是 OpenCode Go provider 服务端内部的限速窗口。
-- `OrgSpendCheck` 只返回**单一** budget,无多窗口字段
-- `UserBudgetStatusWithUser` 有 `source` 字段可能区分窗口(需实际响应确认)
-- `managedInferenceStatus` 枚举: `active` / `plan-required` / `plan-suspended` / `credit-exhausted` / `invoice-overdue`
-
-当前实现: 三窗口共享 org budget 单一值(见 `api.rs:76` TODO)。
+- `rollingUsage` -> 5h 滚动窗口(`ApiQuota.five_hour`)
+- `weeklyUsage` -> 周窗口(`ApiQuota.weekly`)
+- `monthlyUsage` -> 月窗口(`ApiQuota.monthly`)
+- 每窗口:`{ usagePercent: f64, resetInSec: i64 }`(已用百分比 + 重置秒数)
 
 ### 完整调用栈
 
 ```
 fetch_api_quota(app_handle)
-  ├─ database::get_quota_cache() → 缓存命中(5min) → 直接返回
-  ├─ database::get_account_cache()  → 同上
+  ├─ database::get_quota_cache(三窗口) + get_account_cache(plan) -> 缓存命中(5min) -> 直接返回
   ├─ 否则:
-  │   OpenCodeApiClient::new(cookie)
-  │   ├─ send_get(url) → 通用 GET + Cookie: auth=… + 超时/401/5xx 处理
-  │   ├─ fetch_quota()  → GET /api/budgets/org → ApiQuota
-  │   └─ fetch_account()
-  │       ├─ get_billing_status() → GET /api/billing/status → plan + status
-  │       └─ get_expire_date()    → GET /api/billing/seat-billing → renewal/ends
-  │       └─ → ApiAccount
-  └─ set_quota_cache() + set_account_cache()
+  │   读 cookie + workspace_id(settings 表,加密)
+  │   OpenCodeApiClient::new(cookie, workspace_id)
+  │   └─ fetch_quota() -> GET /workspace/{ws}/go -> HTML
+  │       ├─ 检查 /sign-in(cookie 过期)-> Unauthorized
+  │       ├─ 正则提取 rolling/weekly/monthly(usagePercent + resetInSec)
+  │       └─ 正则提取 plan
+  │       └─ -> ApiQuota { five_hour, weekly, monthly, plan }
+  └─ set_quota_cache(三窗口) + set_account_cache(plan)
 ```
 
 ```rust
@@ -98,9 +101,8 @@ pub struct ApiQuota {
     pub monthly:    ApiWindow,
 }
 pub struct ApiWindow {
-    pub used: Option<i64>,
-    pub limit: Option<i64>,
-    pub reset_at: Option<String>,   // 重置时间(ISO 8601)
+    pub usage_percent: f64,    // 已用百分比(0-100,从 Go 页面 usagePercent)
+    pub reset_in_sec: i64,     // 重置倒计时(秒,从 Go 页面 resetInSec)
 }
 pub struct ApiAccount {
     pub plan: Option<String>,
