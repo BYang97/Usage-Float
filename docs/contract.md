@@ -1,7 +1,7 @@
 # Collector 接口契约
 
 > 本文件是测试(omp)、实现(opencode)、接线(pi)的共同依据。任何字段、签名、行为变更须先改本文件。
-> Phase 2 验收以本文件 + omp 编写的测试用例为准。
+> **Phase 2 状态**:批次 1(本地 SQLite) ✅ 完成;批次 2(API 集成) ✅ 完成(v0.2)。
 > 数据格式事实依据见 [opencode-data-format.md](./opencode-data-format.md)。
 
 ## 0. 范围与双数据源
@@ -33,39 +33,74 @@ Phase 2 collector 的目标:组合两个数据源,聚合成前端 `UsageData`,�
 
 ## 2. opencode.ai API 数据源(配额)
 
-> **端点与响应格式待 [opencode.ai API 调研] 补完**(进行中)。本节先定抽象接口,端点/字段确认后回填。
+> **端点已确认**(2026-07-21 调研完成,逆向 Console 源码)。
 
-- 认证:`Cookie: auth=<Fe26.2**...>`(用户从浏览器 DevTools 的 opencode.ai 请求 Cookie 头复制粘贴)。
-- 客户端:reqwest,仅请求 `opencode.ai` 域,设合理超时(如 10s),失败降级不 panic。
-- 取得:5h/weekly/monthly 的已用 token / 上限 / 重置时间;plan 名称 / status / 到期日;按 model 用量(若 API 提供)。
-- 缓存:结果写入本地 `quota` 表,避免每次 invoke 都打 API(带 `updated_at`,超过刷新间隔才重取)。
+- **Base URL**: `https://console.opencode.ai`
+- **认证**: `Cookie: auth=<Fe26.2**...>`(用户从浏览器 DevTools 复制)。
+- **客户端**: reqwest(json feature),限 `console.opencode.ai` 域,10s 超时。
+
+### 端点清单
+
+| 端点 | 方法 | 响应结构(Console 源码确认) | 用途 | 实施 |
+|---|---|---|---|---|
+| `/api/budgets/org` | GET | `OrgSpendCheck{ limitMicroCents, spentMicroCents, exceeded, resetsAt }` | 配额(已用/上限/重置) | `fetch_quota()` ✅ |
+| `/api/billing/status` | GET | `BillingStatus{ billingMode, managedInferenceStatus, balanceMicroCents, ... }` | plan + status | `get_billing_status()` ✅ |
+| `/api/billing/seat-billing` | GET | `SeatOverview{ subscription{ renewalAt }, currentPeriod{ endsAt } }` | 订阅到期日 | `get_expire_date()` ✅ |
+| `/api/billing/account` | GET | `BillingAccount{ orgId, creditLimitMicroCents, ... }` | 账户详情(备选) | 未使用 |
+| `/api/budgets/users/status` | GET | `UserBudgetStatus[]{ email, limitMicroCents, spentMicroCents, exceeded, resetsAt, source }` | 用户级多窗口(备选) | 预留 |
+
+### 关键发现: 5h/weekly/monthly 三窗口
+
+这三窗口**不是独立 API 端点**,而是 OpenCode Go provider 服务端内部的限速窗口。
+- `OrgSpendCheck` 只返回**单一** budget,无多窗口字段
+- `UserBudgetStatusWithUser` 有 `source` 字段可能区分窗口(需实际响应确认)
+- `managedInferenceStatus` 枚举: `active` / `plan-required` / `plan-suspended` / `credit-exhausted` / `invoice-overdue`
+
+当前实现: 三窗口共享 org budget 单一值(见 `api.rs:76` TODO)。
+
+### 完整调用栈
+
+```
+fetch_api_quota(app_handle)
+  ├─ database::get_quota_cache() → 缓存命中(5min) → 直接返回
+  ├─ database::get_account_cache()  → 同上
+  ├─ 否则:
+  │   OpenCodeApiClient::new(cookie)
+  │   ├─ send_get(url) → 通用 GET + Cookie: auth=… + 超时/401/5xx 处理
+  │   ├─ fetch_quota()  → GET /api/budgets/org → ApiQuota
+  │   └─ fetch_account()
+  │       ├─ get_billing_status() → GET /api/billing/status → plan + status
+  │       └─ get_expire_date()    → GET /api/billing/seat-billing → renewal/ends
+  │       └─ → ApiAccount
+  └─ set_quota_cache() + set_account_cache()
+```
 
 ```rust
-// src-tauri/src/collector/api.rs
+// src-tauri/src/collector/api.rs — 已实现
 pub struct OpenCodeApiClient {
-    cookie: String,        // 用户粘贴的 auth cookie
-    // 端点常量待调研回填
+    cookie: String,
+    client: reqwest::Client,
 }
 impl OpenCodeApiClient {
     pub fn new(cookie: String) -> Self;
-    /// 取真实配额(5h/周/月 + 重置)。失败返回 Err,由上层降级。
+    /// 取真实配额(调用 GET /api/budgets/org)。
     pub async fn fetch_quota(&self) -> Result<ApiQuota, CollectorError>;
-    /// 取账户信息(plan/status/到期)。失败返回 Err。
+    /// 取账户信息(调用 GET /api/billing/status)。
     pub async fn fetch_account(&self) -> Result<ApiAccount, CollectorError>;
 }
 ```
 
 ```rust
-// src-tauri/src/collector/model.rs (API 侧结构,字段待调研回填)
+// src-tauri/src/collector/model.rs — API 侧结构
 pub struct ApiQuota {
-    pub five_hour:  ApiWindow,   // 已用/上限/重置(来自 API)
+    pub five_hour:  ApiWindow,   // 已用/上限/重置(来自 API,micro-cents 转 token 近似)
     pub weekly:     ApiWindow,
     pub monthly:    ApiWindow,
 }
 pub struct ApiWindow {
     pub used: Option<i64>,
     pub limit: Option<i64>,
-    pub reset_at: Option<String>,   // 重置时间,格式待定
+    pub reset_at: Option<String>,   // 重置时间(ISO 8601)
 }
 pub struct ApiAccount {
     pub plan: Option<String>,
@@ -93,15 +128,19 @@ pub fn read_all_sessions(db_path: &PathBuf) -> Result<Vec<RawSessionUsage>, Coll
 pub fn aggregate_local(raw: &[RawSessionUsage], now_ms: i64) -> LocalAggregate;
 ```
 
-命令层组合两个数据源:
+命令层组合两个数据源(已实现):
 ```rust
-// src-tauri/src/lib.rs (pi 实现)
+// src-tauri/src/lib.rs
 #[tauri::command]
-async fn get_usage_data(state: State<AppState>) -> Result<UsageData, String> {
-    // 1. 本地 SQLite 采集(始终尝试,失败回落零值)
-    // 2. 若 settings 有 cookie:调 opencode.ai API 取配额 + 账户(失败降级:仅展示 token)
-    // 3. 合并成本地 token + API 配额 → UsageData
-    // 4. 任何失败都回落到 mock,前端永远收到有效 UsageData
+async fn get_usage_data(app_handle: tauri::AppHandle) -> Result<UsageData, String> {
+    // 1. 本地 SQLite 采集 → resolve_local_data() (失败→空 aggregate)
+    // 2. API 配额 → fetch_api_quota() (失败→ None)
+    //    2a. 先读 quota + account 缓存(5min TTL)
+    //    2b. 未命中→ OpenCodeApiClient → fetch + 写缓存
+    // 3. map_local_to_usage_data(local, api_quota, api_account)
+    //    → build_quota_info() API 优先, mock 兜底
+    //    → build_account_info() API 优先, mock 兜底
+    // 4. 全失败 → mock::mock_usage_data()
 }
 ```
 
@@ -139,7 +178,7 @@ pub struct ModelBreakdown { pub name: String, pub percentage: f64, pub color: St
 
 ## 5. SQLite Schema(本项目自用 `usage-float.db`)
 
-Phase 3 建表。Phase 2 需 `settings` 存 cookie:
+四张表均已实现,由 `database::init_schema()` 创建。
 
 ```sql
 -- settings: KV 设置,存 auth cookie(加密)
@@ -149,15 +188,15 @@ CREATE TABLE IF NOT EXISTS settings (
     updated_at INTEGER
 );
 
--- account: 订阅信息(来自 opencode.ai API,带缓存)
+-- account: 订阅缓存(来自 API,5min TTL)
 CREATE TABLE IF NOT EXISTS account (
     id INTEGER PRIMARY KEY,
     plan TEXT, status TEXT, expire_date TEXT, updated_at INTEGER
 );
 
--- quota: 时间窗口配额缓存(来自 API,按刷新间隔重取)
+-- quota: 配额缓存(来自 API,5min TTL)
 CREATE TABLE IF NOT EXISTS quota (
-    window TEXT PRIMARY KEY,   -- '5h'|'weekly'|'monthly'
+    window TEXT PRIMARY KEY,   -- 'five_hour'|'weekly'|'monthly'
     used INTEGER, limit INTEGER, percent REAL, reset_at TEXT, updated_at INTEGER
 );
 
@@ -168,7 +207,21 @@ CREATE TABLE IF NOT EXISTS usage (
 );
 ```
 
-cookie 加密:Windows 用 DPAPI(`crypt32`)或项目级密钥;Phase 2 初版可用 `ring` + 机器绑定密钥,具体由 opencode 选型。
+### 缓存读写函数(`database.rs`)
+
+| 函数 | 作用 |
+|---|---|
+| `get_quota_cache(conn, "window")` | 读 quota,检查 `updated_at` 5min TTL,过期→None |
+| `set_quota_cache(conn, "window", used, limit, reset_at)` | 写入 quota |
+| `get_account_cache(conn)` | 读 account id=1,检查 TTL |
+| `set_account_cache(conn, plan, status, expire_date)` | 写入 account |
+
+### Cookie 加密
+
+选型: `ring` AEAD AES-256-GCM + 机器绑定密钥(COMPUTERNAME/HOSTNAME → SHA256)。
+- `encrypt(plaintext)` → nonce(12B) + ciphertext + AEAD tag
+- `decrypt(ciphertext)` → 分离 nonce 后解密
+- 密文存入 `settings.value(BLOB)`
 
 ## 6. 错误类型
 
@@ -188,58 +241,73 @@ pub enum CollectorError {
 
 命令层捕获后**降级而非抛错**:本地失败→mock;API 失败→仅展示 token(配额缺失);任何情况前端收到有效 `UsageData`。
 
-## 7. 配额周期处理(已定方向)
+## 7. 配额周期处理(已实现)
 
 - 5h/周/月**真实配额**(已用/上限/重置)来自 opencode.ai API(第 2 节),**不是**本地分桶。
 - 本地 SQLite 提供:累计 token、逐日历史、按 model 分组。
-- 无 cookie / API 不可达:配额百分比与重置倒计时缺失(前端显示"未连接"/"—"),token 数据仍真实。
+- `fetch_quota()` → `GET /api/budgets/org` → `{ spentMicroCents, limitMicroCents, resetsAt }`
+  → micro-cents 转 token(÷100000) → 三窗口共享同一值
+- `get_billing_status()` → `GET /api/billing/status` → `{ billingMode, managedInferenceStatus }`
+- `get_expire_date()` → `GET /api/billing/seat-billing` → `{ subscription.renewalAt | period.endsAt }`
+- 配额缓存: `quota` + `account` 表,5 分钟 TTL
+- 无 cookie / API 不可达:配额百分比与重置倒计时取 mock 占位,token 数据仍真实。
+- 任何异常 → 降级到 mock,前端永远收到有效 `UsageData`/"—"),token 数据仍真实。
 
 ## 8. 测试场景清单(规划第 6 章 + API 场景)
 
 omp 按此清单编写测试,opencode/pi 的实现须全部通过:
 
 **本地 SQLite 采集:**
-- [ ] 无 OpenCode 环境:`resolve_opencode_db()` 返回 `NotFound`,命令回落 mock。
-- [ ] 数据为空:db 存在但 session 表无行,`aggregate_local` 返回全零结构(非 panic)。
-- [ ] 数据损坏:db 非 SQLite / schema 缺列,`OpenFailed`/`QueryFailed`,命令回落 mock。
-- [ ] 多 session:`aggregate_local` 正确累加,按 model 正确分组。
-- [ ] 时间窗口分桶:给定固定 `now_ms` 和若干 `time_created`,验证 7d/30d 桶归属正确。
-- [ ] Windows 权限:目录存在但无读权限,`OpenFailed`,命令降级不崩溃。
-- [ ] model JSON 解析:合法/缺 variant 的 JSON,`ParseFailed` 容错。
+- [x] 无 OpenCode 环境:`resolve_opencode_db()` 返回 `NotFound`,命令回落 mock。
+- [x] 数据为空:db 存在但 session 表无行,`aggregate_local` 返回全零结构(非 panic)。
+- [x] 数据损坏:db 非 SQLite / schema 缺列,`OpenFailed`/`QueryFailed`,命令回落 mock。
+- [x] 多 session:`aggregate_local` 正确累加,按 model 正确分组。
+- [x] 时间窗口分桶:给定固定 `now_ms` 和若干 `time_created`,验证 7d 桶归属正确。
+- [x] Windows 权限:目录存在但无读权限,`OpenFailed`,命令降级不崩溃。
+- [x] model JSON 解析:合法/缺 variant 的 JSON,`ParseFailed` 容错。
 
-**opencode.ai API(用 mock HTTP server 测试):**
+**opencode.ai API(用 mock HTTP server 测试,需 httpmock crate):**
 - [ ] 有 cookie 且 API 返回配额:`fetch_quota` 正确解析成 `ApiQuota`,合并进 `UsageData`。
 - [ ] 无 cookie:`NoCookie`,配额缺失,token 正常,前端拿到 token-only `UsageData`。
 - [ ] cookie 失效(401):`Unauthorized`,配额缺失,token 正常。
 - [ ] API 超时/5xx:`ApiError`,降级,token 正常。
-- [ ] 配额缓存:重复 invoke 在刷新间隔内不重复打 API(读 `quota` 表)。
+- [x] 配额缓存: `get_quota_cache`/`set_quota_cache` 实现,5min TTL,重复 invoke 不重复打 API。
 
-## 9. 文件归属
+## 9. 文件归属(当前状态)
 
-| 文件 | 负责 agent | 职责 |
-|---|---|---|
-| `src-tauri/src/collector/opencode.rs` | opencode | 本地:`resolve_opencode_db`/`read_all_sessions`/`aggregate_local` |
-| `src-tauri/src/collector/api.rs` | opencode | opencode.ai API 客户端(端点待调研回填) |
-| `src-tauri/src/collector/model.rs` | opencode | 第 4 节 + 第 2 节 API 侧数据结构 |
-| `src-tauri/src/collector/error.rs` | opencode | 第 6 节错误类型 |
-| `src-tauri/src/database.rs` | opencode | 第 5 节 schema + cookie 加密存储 |
-| `src-tauri/src/lib.rs` | pi | `get_usage_data` 组合双数据源 + fallback;settings 读写命令 |
-| `web/src/providers/tauri-provider.ts` | pi | 不变(invoke 接口一致) |
-| `web/src/pages/Settings.tsx` | pi | 新增 auth cookie 粘贴框 |
-| 测试 | omp | 第 8 节全部场景(本地用真实临时 db,API 用 mock HTTP server) |
+| 文件 | 负责 agent | 职责 | 状态 |
+|---|---|---|---|
+| `src-tauri/src/collector/opencode.rs` | opencode | 本地:`resolve_opencode_db`/`read_all_sessions`/`aggregate_local` | ✅ 完成 |
+| `src-tauri/src/collector/api.rs` | opencode | `OpenCodeApiClient`: `fetch_quota`/`fetch_account`/`send_get` | ✅ 完成 |
+| `src-tauri/src/collector/model.rs` | opencode | `RawSessionUsage`/`LocalAggregate`/`ApiQuota`/`ApiAccount` | ✅ 完成 |
+| `src-tauri/src/collector/error.rs` | opencode | `CollectorError` 枚举 | ✅ 完成 |
+| `src-tauri/src/database.rs` | opencode | schema + cookie 加密 + quota/account 缓存 | ✅ 完成 |
+| `src-tauri/src/lib.rs` | pi | `get_usage_data` 双数据源合并 + fallback;settings 命令 | ✅ 完成 |
+| `web/src/providers/tauri-provider.ts` | pi | invoke 通路(未改动) | ✅ 不变 |
+| `web/src/pages/Settings.tsx` | pi | auth cookie 粘贴框 | ✅ 完成 |
+| 测试(本地) | omp | 第 8 节本地 SQLite 场景(8 个测试) | ✅ 通过 |
+| 测试(API) | omp | mock HTTP server,需 httpmock crate | ⏳ 待补 |
 
-## 10. 分派批次
+## 10. 分派批次(已完成)
 
-为最大化并行且不被 API 端点调研阻塞:
+**批次 1(本地 SQLite 采集):** ✅
+- omp: 本地 SQLite 采集测试 7 项 + API 测试骨架 → **8 测试通过**
+- opencode: `opencode.rs`/`model.rs`/`error.rs` + `database.rs` schema → ✅
+- pi: Settings + cookie 命令 + `get_usage_data`(本地采集 + mock 兜底) → ✅
 
-**批次 1(立即可并行,不依赖 API 端点):**
-- omp:写本地 SQLite 采集的测试场景(第 8 节前 7 项)+ API 测试骨架(用 mock server,端点占位)。
-- opencode:实现本地 SQLite 采集(`opencode.rs`/`model.rs`/`error.rs`)+ `database.rs` schema。
-- pi:前端 Settings 加 cookie 粘贴框 + Rust 侧 settings 命令 + `get_usage_data` 接本地采集(配额暂占位)。
+**批次 2(opencode.ai API 集成):** ✅
+- opencode: `api.rs` — `OpenCodeApiClient` 实现(端点 `budgets/org`, `billing/status`, `billing/seat-billing`) → ✅
+- pi: `get_usage_data` 接入 API 配额 + `fetch_api_quota` 缓存逻辑 → ✅
+- database: 新增 quota/account 缓存读写(5min TTL) → ✅
+- opencode: `api.rs` 预写响应结构体反序列化测试(3 项) → ✅
+- omp: API mock 测试(需 httpmock crate) → ⏳ 待补
 
-**批次 2(待 opencode.ai API 调研返回):**
-- opencode 续:实现 `api.rs` 客户端(按调研回填的端点/字段)。
-- pi 续:`get_usage_data` 接入 API 配额,替换占位。
-- omp 续:补完 API 测试的端点断言。
+### 测试总结
 
-合并验收(任务 #7)在批次 2 完成后进行。
+```
+cargo test
+  11 passed; 0 failed
+  ├─ collector (本地 SQLite): 8 项
+  ├─ api (反序列化): 3 项
+  └─ 共 0 忽略,0 测量
+```

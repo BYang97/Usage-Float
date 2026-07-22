@@ -187,3 +187,130 @@ pub fn get_opencode_cookie(conn: &Connection) -> Result<Option<String>, Collecto
 pub fn set_opencode_cookie(conn: &Connection, cookie: &str) -> Result<(), CollectorError> {
     set_setting(conn, COOKIE_KEY_NAME, cookie)
 }
+
+// ===== 配额/账户缓存读写(quota + account 表) =====
+/// 缓存刷新间隔(5 分钟)。
+pub const CACHE_TTL_MS: i64 = 300_000;
+
+/// 配额缓存行。
+struct QuotaRow {
+    used: Option<i64>,
+    limit_val: Option<i64>,
+    reset_at: Option<String>,
+    updated_at: i64,
+}
+
+/// 从 quota 表读指定窗口的缓存。返回 None 表示无缓存或已过期。
+pub fn get_quota_cache(conn: &Connection, window: &str) -> Result<Option<(i64, Option<i64>, Option<String>)>, CollectorError> {
+    use rusqlite::OptionalExtension;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64;
+
+    let mut stmt = conn
+        .prepare("SELECT used, limit, reset_at, updated_at FROM quota WHERE window = ?1")
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    let row: Option<QuotaRow> = stmt
+        .query_row(params![window], |row| {
+            Ok(QuotaRow {
+                used: row.get(0)?,
+                limit_val: row.get(1)?,
+                reset_at: row.get(2)?,
+                updated_at: row.get(3)?,
+            })
+        })
+        .optional()
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    match row {
+        Some(r) if now - r.updated_at < CACHE_TTL_MS => {
+            Ok(Some((r.used.unwrap_or(0), r.limit_val, r.reset_at)))
+        }
+        _ => Ok(None),
+    }
+}
+
+/// 写入配额缓存(三个窗口)。
+pub fn set_quota_cache(
+    conn: &Connection,
+    window: &str,
+    used: Option<i64>,
+    limit_val: Option<i64>,
+    reset_at: Option<&str>,
+) -> Result<(), CollectorError> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64;
+
+    let used_int = used.unwrap_or(0);
+    let pct = match (used, limit_val) {
+        (Some(u), Some(l)) if l > 0 => (u as f64 / l as f64) * 100.0,
+        _ => 0.0,
+    };
+
+    conn.execute(
+        "INSERT OR REPLACE INTO quota (window, used, limit, percent, reset_at, updated_at) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![window, used_int, limit_val, pct, reset_at, now],
+    )
+    .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    Ok(())
+}
+
+/// 从 account 表读取缓存。返回 None 表示无缓存或已过期。
+pub fn get_account_cache(conn: &Connection) -> Result<Option<(String, String, Option<String>)>, CollectorError> {
+    use rusqlite::OptionalExtension;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64;
+
+    let mut stmt = conn
+        .prepare("SELECT plan, status, expire_date, updated_at FROM account WHERE id = 1")
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    let row: Option<(String, String, Option<String>, i64)> = stmt
+        .query_row([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, Option<String>>(2)?,
+                row.get::<_, i64>(3)?,
+            ))
+        })
+        .optional()
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    match row {
+        Some((plan, status, expire_date, updated_at)) if now - updated_at < CACHE_TTL_MS => {
+            Ok(Some((plan, status, expire_date)))
+        }
+        _ => Ok(None),
+    }
+}
+
+/// 写入账户缓存。
+pub fn set_account_cache(
+    conn: &Connection,
+    plan: &str,
+    status: &str,
+    expire_date: Option<&str>,
+) -> Result<(), CollectorError> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64;
+
+    conn.execute(
+        "INSERT OR REPLACE INTO account (id, plan, status, expire_date, updated_at) \
+         VALUES (1, ?1, ?2, ?3, ?4)",
+        params![plan, status, expire_date, now],
+    )
+    .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    Ok(())
+}
