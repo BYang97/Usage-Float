@@ -1,12 +1,12 @@
 // ============================================================
-// opencode.ai API 客户端 — 取真实配额与账户信息
+// opencode.ai API 客户端 - 取真实配额与账户信息
 //
 // 端点调研结果:
 //   Base URL: https://console.opencode.ai
 //   Auth:     Cookie: auth=<Fe26.2...>
-//   GET /api/budgets/org     → OrgSpendCheck { limitMicroCents, spentMicroCents, exceeded, resetsAt }
-//   GET /api/billing/status  → BillingStatus { billingMode, balanceMicroCents, ... }
-//   GET /api/billing/account → BillingAccount { orgId, creditLimitMicroCents, ... }
+//   GET /api/budgets/org     -> OrgSpendCheck { limitMicroCents, spentMicroCents, exceeded, resetsAt }
+//   GET /api/billing/status  -> BillingStatus { billingMode, balanceMicroCents, ... }
+//   GET /api/billing/account -> BillingAccount { orgId, creditLimitMicroCents, ... }
 //
 // 调研过程见 docs/contract.md §2.
 // ============================================================
@@ -15,23 +15,35 @@ use crate::collector::error::CollectorError;
 use crate::collector::model::{ApiAccount, ApiQuota, ApiWindow};
 use serde::Deserialize;
 
-const BASE_URL: &str = "https://console.opencode.ai";
+const DEFAULT_BASE_URL: &str = "https://console.opencode.ai";
 const REQUEST_TIMEOUT_SECS: u64 = 10;
 
 /// opencode.ai API 客户端。
 pub struct OpenCodeApiClient {
     cookie: String,
+    base_url: String,
     client: reqwest::Client,
 }
 
 impl OpenCodeApiClient {
-    /// 新建客户端。cookie 为空时后续调用返回 Err(NoCookie)。
+    /// 新建客户端(默认官方域 console.opencode.ai,10s 超时)。
+    /// cookie 为空时后续调用返回 Err(NoCookie)。
     pub fn new(cookie: String) -> Self {
+        Self::with_options(cookie, DEFAULT_BASE_URL.to_string(), REQUEST_TIMEOUT_SECS)
+    }
+
+    /// 指定 base_url 构造(测试注入 mock server 用),超时用默认。
+    pub fn with_base_url(cookie: String, base_url: String) -> Self {
+        Self::with_options(cookie, base_url, REQUEST_TIMEOUT_SECS)
+    }
+
+    /// 全参数构造(测试可控制 timeout 以加速超时场景)。
+    pub fn with_options(cookie: String, base_url: String, timeout_secs: u64) -> Self {
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
+            .timeout(std::time::Duration::from_secs(timeout_secs))
             .build()
             .expect("reqwest Client 初始化不应失败");
-        Self { cookie, client }
+        Self { cookie, base_url, client }
     }
 
     /// 取真实配额(预算/已用/重置时间)。
@@ -45,7 +57,7 @@ impl OpenCodeApiClient {
             return Err(CollectorError::NoCookie);
         }
 
-        let url = format!("{}/api/budgets/org", BASE_URL);
+        let url = format!("{}/api/budgets/org", self.base_url);
         let resp = self
             .client
             .get(&url)
@@ -78,7 +90,9 @@ impl OpenCodeApiClient {
         })?;
 
         // 将单一窗口映射到三个窗口
-        let used_tokens = budget.spent_micro_cents / 100_000; // micro-cents → tokens 近似
+        // NOTE: spentMicroCents 是金额(非 token),此处除以 100_000 仅作归一化,
+        // 百分比(used/limit)正确,绝对值语义待 TODO 替换为真实 token 端点。
+        let used_tokens = budget.spent_micro_cents / 100_000;
         let limit_tokens = budget
             .limit_micro_cents
             .map(|l| l / 100_000);
@@ -122,16 +136,16 @@ impl OpenCodeApiClient {
 
     /// GET /api/billing/status
     async fn get_billing_status(&self) -> Result<BillingStatusResponse, CollectorError> {
-        let url = format!("{}/api/billing/status", BASE_URL);
+        let url = format!("{}/api/billing/status", self.base_url);
         let resp = self.send_get(&url).await?;
         resp.json().await.map_err(|e| {
             CollectorError::ParseFailed(format!("解析账单状态失败: {}", e))
         })
     }
 
-    /// GET /api/billing/seat-billing → 取 subscription.renewalAt 或 period.endsAt。
+    /// GET /api/billing/seat-billing -> 取 subscription.renewalAt 或 period.endsAt。
     async fn get_expire_date(&self) -> Result<Option<String>, CollectorError> {
-        let url = format!("{}/api/billing/seat-billing", BASE_URL);
+        let url = format!("{}/api/billing/seat-billing", self.base_url);
         let resp = match self.send_get(&url).await {
             Ok(r) => r,
             Err(_) => return Ok(None), // seat-billing 可能无订阅(免费用户)
@@ -280,7 +294,7 @@ mod tests {
         let check: OrgSpendCheck = serde_json::from_str(json).unwrap();
         assert_eq!(check.limit_micro_cents, Some(500000000));
         assert_eq!(check.spent_micro_cents, 350000000);
-        assert_eq!(check.exceeded, false);
+        assert!(!check.exceeded);
         assert_eq!(
             check.resets_at,
             Some("2026-07-22T00:00:00Z".to_string())
