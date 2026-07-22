@@ -1,34 +1,31 @@
-import { useState, useCallback, type MouseEvent } from 'react';
 import { t } from '../tokens';
 import { ProviderBadge } from './ProviderBadge';
 import { QuotaRing } from './QuotaRing';
+import type { CSSProperties } from 'react';
 
-interface Props { percentage: number; resetTime: string; onOpenDashboard: () => void; onClose: () => void }
+interface Props {
+  percentage: number;
+  resetTime: string;
+  onOpenDashboard: () => void;
+  onClose: () => void;
+  /** 可选的自定义样式（用于父组件定位） */
+  style?: CSSProperties;
+}
 
-export function FloatWidget({ percentage, resetTime, onOpenDashboard, onClose }: Props) {
-  const [pos, setPos] = useState({ x: window.innerWidth - 340, y: window.innerHeight - 220 });
-  const [dragging, setDragging] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-
-  const onMouseDown = useCallback((e: MouseEvent) => {
-    setDragging(true);
-    setOffset({ x: e.clientX - pos.x, y: e.clientY - pos.y });
-  }, [pos]);
-
-  const onMouseMove = useCallback((e: MouseEvent) => {
-    if (!dragging) return;
-    setPos({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-  }, [dragging, offset]);
-
-  const onMouseUp = useCallback(() => setDragging(false), []);
-
+/**
+ * 悬浮球内容组件（纯展示，不含拖拽逻辑）
+ *
+ * 拖拽由父组件决定策略：
+ * - 在 FloatWindow 中通过 data-tauri-drag-region 实现 OS 窗口拖拽
+ * - 在主窗口叠加层中通过 DraggableWrapper 实现 JS 拖拽
+ */
+export function FloatWidget({ percentage, resetTime, onOpenDashboard, onClose, style }: Props) {
   return (
     <div
-      onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
       style={{
-        position: 'fixed', zIndex: 50, cursor: dragging ? 'grabbing' : 'grab',
-        left: pos.x, top: pos.y, width: 320, height: 180, borderRadius: 12,
+        width: 320, height: 180, borderRadius: 12,
         boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden',
+        ...style,
       }}>
       <div style={{
         width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center',

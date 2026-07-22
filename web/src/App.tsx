@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, type MouseEvent } from 'react';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { Dashboard } from './pages/Dashboard';
 import { Settings } from './pages/Settings';
@@ -57,6 +57,29 @@ export default function App() {
     };
   }, [loadQuota]);
 
+  // ─── 拖拽状态（主窗口叠加层用 JS 拖拽） ──────────────────────
+  const [pos, setPos] = useState({ x: window.innerWidth - 340, y: window.innerHeight - 220 });
+  const dragRef = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({
+    dragging: false, offsetX: 0, offsetY: 0,
+  });
+
+  const onOverlayMouseDown = useCallback((e: MouseEvent) => {
+    const drag = dragRef.current;
+    drag.dragging = true;
+    drag.offsetX = e.clientX - pos.x;
+    drag.offsetY = e.clientY - pos.y;
+  }, [pos]);
+
+  const onOverlayMouseMove = useCallback((e: MouseEvent) => {
+    const drag = dragRef.current;
+    if (!drag.dragging) return;
+    setPos({ x: e.clientX - drag.offsetX, y: e.clientY - drag.offsetY });
+  }, []);
+
+  const onOverlayMouseUp = useCallback(() => {
+    dragRef.current.dragging = false;
+  }, []);
+
   return (
     <div style={{ width: '100%', height: '100%', background: '#1a1b1e' }}>
       {page === 'dashboard' && (
@@ -72,13 +95,25 @@ export default function App() {
       {page === 'settings' && <Settings onNavigate={p => setPage(p)} />}
       {(page === 'history' || page === 'models') && <Dashboard onNavigate={p => setPage(p)} />}
 
+      {/* 主窗口叠加层浮窗 — 使用 JS 拖拽在主窗口内定位 */}
       {floatVisible && quota && (
-        <FloatWidget
-          percentage={quota.fiveHourPercent}
-          resetTime={quota.fiveHourReset}
-          onOpenDashboard={() => { setPage('dashboard'); setFloatVisible(false); }}
-          onClose={() => setFloatVisible(false)}
-        />
+        <div
+          onMouseDown={onOverlayMouseDown}
+          onMouseMove={onOverlayMouseMove}
+          onMouseUp={onOverlayMouseUp}
+          onMouseLeave={onOverlayMouseUp}
+          style={{
+            position: 'fixed', zIndex: 50, cursor: 'grab',
+            left: pos.x, top: pos.y,
+          }}
+        >
+          <FloatWidget
+            percentage={quota.fiveHourPercent}
+            resetTime={quota.fiveHourReset}
+            onOpenDashboard={() => { setPage('dashboard'); setFloatVisible(false); }}
+            onClose={() => setFloatVisible(false)}
+          />
+        </div>
       )}
     </div>
   );

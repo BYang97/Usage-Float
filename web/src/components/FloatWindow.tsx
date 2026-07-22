@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { FloatWidget } from './FloatWidget';
 import { getQuota, subscribe, startAutoRefresh, stopAutoRefresh } from '../services/usage-service';
@@ -11,8 +11,9 @@ import type { QuotaInfo } from '../types';
  * 支持自动刷新：启动时加载数据，订阅数据变更，定时刷新。
  *
  * 窗口交互：
- * - data-tauri-drag-region：CSS 区域拖拽整个 OS 窗口（无边框窗口必需）
+ * - 顶部 36px 拖拽手柄使用 data-tauri-drag-region 实现 OS 窗口拖拽
  * - 关闭按钮调用 Tauri Window.hide() 隐藏窗口而非退出应用
+ * - 底部「打开仪表盘」可点击跳转主窗口
  */
 export function FloatWindow() {
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
@@ -73,10 +74,16 @@ export function FloatWindow() {
     return null;
   }
 
+  const containerStyle: CSSProperties = {
+    width: '100%', height: '100%', position: 'relative',
+  };
+
   // 错误状态：显示降级浮窗
   if (error) {
     return (
-      <div data-tauri-drag-region style={{ width: '100%', height: '100%' }}>
+      <div style={containerStyle}>
+        {/* 拖拽手柄 — 顶部左侧区域，右侧留 48px 给按钮，避免拖拽与点击冲突 */}
+        <div data-tauri-drag-region style={{ position: 'absolute', top: 0, left: 0, width: 'calc(100% - 48px)', height: 36 }} />
         <FloatWidget
           percentage={0}
           resetTime="—"
@@ -89,7 +96,9 @@ export function FloatWindow() {
 
   // 正常渲染
   return (
-    <div data-tauri-drag-region style={{ width: '100%', height: '100%' }}>
+    <div style={containerStyle}>
+      {/* 拖拽手柄 — 顶部左侧区域，右侧留 48px 给按钮 */}
+      <div data-tauri-drag-region style={{ position: 'absolute', top: 0, left: 0, width: 'calc(100% - 48px)', height: 36 }} />
       <FloatWidget
         percentage={quota!.fiveHourPercent}
         resetTime={quota!.fiveHourReset}
