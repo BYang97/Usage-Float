@@ -6,7 +6,9 @@ pub mod proxy;
 
 use collector::model::{ApiAccount, ApiQuota, ApiWindow};
 use models::UsageData;
+use database::{Account, AccountForm};
 use tauri::Manager;
+use serde::Serialize;
 
 // ============================================================
 // 用量数据命令 - 组合本地 collector + opencode.ai Go 页面(批次 2 重构)+ mock 兜底
@@ -308,6 +310,133 @@ async fn set_opencode_workspace_id(app_handle: tauri::AppHandle, workspace_id: S
 }
 
 // ============================================================
+// 多账号管理命令 - 账号 CRUD + 配额刷新
+// ============================================================
+
+/// refresh_one 返回的单账号配额结果。
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UsageResult {
+    pub plan: Option<String>,
+    pub five_hour_percent: f64,
+    pub five_hour_reset: i64,
+    pub weekly_percent: f64,
+    pub weekly_reset: i64,
+    pub monthly_percent: f64,
+    pub monthly_reset: i64,
+}
+
+/// refresh_all 返回的带配额账号条目。
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountWithUsage {
+    pub account: Account,
+    pub usage: Option<UsageResult>,
+}
+
+/// 列出全部账号。
+#[tauri::command]
+async fn list_accounts(app_handle: tauri::AppHandle) -> Result<Vec<Account>, String> {
+    let app_data_dir = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
+    database::list_accounts(&conn).map_err(|e| e.to_string())
+}
+
+/// 创建新账号。
+#[tauri::command]
+async fn create_account(app_handle: tauri::AppHandle, form: AccountForm) -> Result<Account, String> {
+    let app_data_dir = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
+    database::create_account(&conn, form).map_err(|e| e.to_string())
+}
+
+/// 更新指定账号。auth_cookie 留空则保持原值不变。
+#[tauri::command]
+async fn update_account(
+    app_handle: tauri::AppHandle,
+    id: String,
+    form: AccountForm,
+) -> Result<Account, String> {
+    let app_data_dir = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
+    database::update_account(&conn, &id, form)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("账号 {} 不存在", id))
+}
+
+/// 删除指定账号。账号不存在返回错误。
+#[tauri::command]
+async fn delete_account(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
+    let app_data_dir = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
+    let deleted = database::delete_account(&conn, &id).map_err(|e| e.to_string())?;
+    if deleted {
+        Ok(())
+    } else {
+        Err(format!("账号 {} 不存在", id))
+    }
+}
+
+/// 刷新单个账号的配额。按 account_id 取 cookie+workspace_id,调 opencode.ai API。
+#[tauri::command]
+async fn refresh_one(app_handle: tauri::AppHandle, account_id: String) -> Result<UsageResult, String> {
+    let app_data_dir = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
+    let account = database::get_account(&conn, &account_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("账号 {} 不存在", account_id))?;
+
+    let client = collector::api::OpenCodeApiClient::new(account.auth_cookie, account.workspace_id);
+    let quota = client.fetch_quota().await
+        .map_err(|e| format!("配额刷新失败: {}", e))?;
+
+    Ok(UsageResult {
+        plan: quota.plan,
+        five_hour_percent: quota.five_hour.usage_percent,
+        five_hour_reset: quota.five_hour.reset_in_sec,
+        weekly_percent: quota.weekly.usage_percent,
+        weekly_reset: quota.weekly.reset_in_sec,
+        monthly_percent: quota.monthly.usage_percent,
+        monthly_reset: quota.monthly.reset_in_sec,
+    })
+}
+
+/// 刷新全部账号的配额。逐个调用 refresh_one,失败账号 usage 为 None。
+#[tauri::command]
+async fn refresh_all(app_handle: tauri::AppHandle) -> Result<Vec<AccountWithUsage>, String> {
+    let app_data_dir = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
+    let accounts = database::list_accounts(&conn).map_err(|e| e.to_string())?;
+
+    let mut results = Vec::with_capacity(accounts.len());
+    for acc in accounts {
+        let usage = match collector::api::OpenCodeApiClient::new(
+            acc.auth_cookie.clone(),
+            acc.workspace_id.clone(),
+        ).fetch_quota().await {
+            Ok(quota) => Some(UsageResult {
+                plan: quota.plan,
+                five_hour_percent: quota.five_hour.usage_percent,
+                five_hour_reset: quota.five_hour.reset_in_sec,
+                weekly_percent: quota.weekly.usage_percent,
+                weekly_reset: quota.weekly.reset_in_sec,
+                monthly_percent: quota.monthly.usage_percent,
+                monthly_reset: quota.monthly.reset_in_sec,
+            }),
+            Err(_) => None,
+        };
+        results.push(AccountWithUsage { account: acc, usage });
+    }
+    Ok(results)
+}
+
+// ============================================================
 // Tauri 应用入口
 // ============================================================
 
@@ -386,6 +515,12 @@ pub fn run() {
             set_opencode_cookie,
             get_opencode_workspace_id,
             set_opencode_workspace_id,
+            list_accounts,
+            create_account,
+            update_account,
+            delete_account,
+            refresh_one,
+            refresh_all,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
