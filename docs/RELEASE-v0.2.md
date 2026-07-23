@@ -10,11 +10,11 @@ cd src-tauri && cargo build --release --offline   # 产 exe(离线,依赖已缓�
 npx @tauri-apps/cli build
 ```
 
-产物:`src-tauri/target/release/app.exe`
+产物:`src-tauri/target/release/app.exe`(约 15.5 MB)
 
 ## 校验
 
-- **SHA256**:待构建(本机构建后填,同源同配置可复现)
+- **SHA256**:`1c22f9f8d1bb68f25e7b9145594cc9d45d5d42c3c5150820e2eff89fd0ec0b30`(本机构建,同源同配置可复现)
 
 ## 能力(v0.1 基础 + v0.2 新增)
 
