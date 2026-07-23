@@ -36,7 +36,7 @@ pub fn init_schema(db_path: &Path) -> Result<(), CollectorError> {
         CREATE TABLE IF NOT EXISTS quota (
             window TEXT PRIMARY KEY,
             used INTEGER,
-            limit INTEGER,
+            `limit` INTEGER,
             percent REAL,
             reset_at TEXT,
             updated_at INTEGER
@@ -248,7 +248,7 @@ pub fn set_quota_cache(
         .as_millis() as i64;
 
     conn.execute(
-        "INSERT OR REPLACE INTO quota (window, used, limit, percent, reset_at, updated_at) \
+        "INSERT OR REPLACE INTO quota (window, used, `limit`, percent, reset_at, updated_at) \
          VALUES (?1, NULL, NULL, ?2, ?3, ?4)",
         params![window, usage_percent, reset_in_sec.to_string(), now],
     )

@@ -1,5 +1,5 @@
 pub mod collector;
-mod database;
+pub mod database;
 mod mock;
 mod models;
 pub mod proxy;
