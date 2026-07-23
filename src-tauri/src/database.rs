@@ -3,6 +3,7 @@ use std::path::Path;
 use rusqlite::{Connection, params};
 
 use crate::collector::error::CollectorError;
+use serde::{Deserialize, Serialize};
 
 /// 本地数据库文件名。
 const DB_FILE_NAME: &str = "usage-float.db";
@@ -12,7 +13,7 @@ pub fn resolve_db_path(app_data_dir: &std::path::PathBuf) -> std::path::PathBuf 
     app_data_dir.join(DB_FILE_NAME)
 }
 
-/// 初始化 Phase 2 自用 schema: settings / account / quota / usage 四表。
+/// 初始化自用 schema: settings / account / accounts / quota / usage 五表。
 pub fn init_schema(db_path: &Path) -> Result<(), CollectorError> {
     let conn = Connection::open(db_path)
         .map_err(|e| CollectorError::OpenFailed(e.to_string()))?;
@@ -33,6 +34,16 @@ pub fn init_schema(db_path: &Path) -> Result<(), CollectorError> {
             updated_at INTEGER
         );
 
+        CREATE TABLE IF NOT EXISTS accounts (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            auth_cookie TEXT NOT NULL,
+            notes TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS quota (
             window TEXT PRIMARY KEY,
             used INTEGER,
@@ -50,6 +61,46 @@ pub fn init_schema(db_path: &Path) -> Result<(), CollectorError> {
             PRIMARY KEY (day, model)
         );
         ",
+    )
+    .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    // Migration: accounts 表空且 settings 有 opencode_auth_cookie 时插入默认账号
+    migrate_from_settings(&conn)?;
+
+    Ok(())
+}
+
+
+/// 从旧 settings 单账号迁移到 accounts 表。
+/// 仅在 accounts 表为空且 settings 中有 opencode_auth_cookie 时执行。
+fn migrate_from_settings(conn: &Connection) -> Result<(), CollectorError> {
+    // 检查 accounts 表是否已有数据
+    let count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM accounts", [], |row| row.get(0))
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    if count > 0 {
+        return Ok(());
+    }
+
+    // 读取 settings 中的旧 cookie
+    let cookie = get_opencode_cookie(conn)?;
+    let cookie = match cookie {
+        Some(c) if !c.is_empty() => c,
+        _ => return Ok(()),
+    };
+
+    // 读取 workspace_id（可能未设置）
+    let workspace_id = get_opencode_workspace_id(conn)?.unwrap_or_default();
+
+    let now = now_ms();
+    let id = generate_account_id();
+    let encrypted_cookie = encrypt(cookie.as_bytes())?;
+
+    conn.execute(
+        "INSERT INTO accounts (id, name, workspace_id, auth_cookie, notes, created_at, updated_at) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![id, "默认", workspace_id, encrypted_cookie, String::new(), now, now],
     )
     .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
 
@@ -295,4 +346,382 @@ pub fn set_account_cache(conn: &Connection, plan: &str) -> Result<(), CollectorE
     .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
 
     Ok(())
+}
+
+// ===== 多账号管理(accounts 表 CRUD) =====
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Account {
+    pub id: String,
+    pub name: String,
+    pub workspace_id: String,
+    pub auth_cookie: String,
+    pub notes: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountForm {
+    pub name: String,
+    pub workspace_id: String,
+    pub auth_cookie: String,
+    pub notes: String,
+}
+
+fn generate_account_id() -> String {
+    let rng = SystemRandom::new();
+    let mut bytes = [0u8; 16];
+    let _ = rng.fill(&mut bytes);
+    let hex: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
+    format!("acc_{}", hex)
+}
+
+fn now_ms() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64
+}
+
+/// 列出所有账号,按创建时间升序。auth_cookie 已解密。
+pub fn list_accounts(conn: &Connection) -> Result<Vec<Account>, CollectorError> {
+    let mut stmt = conn
+        .prepare("SELECT id, name, workspace_id, auth_cookie, notes, created_at, updated_at FROM accounts ORDER BY created_at ASC")
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, Vec<u8>>(3)?,
+                row.get::<_, String>(4)?,
+                row.get::<_, i64>(5)?,
+                row.get::<_, i64>(6)?,
+            ))
+        })
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    let mut accounts = Vec::new();
+    for row_result in rows {
+        let (id, name, workspace_id, encrypted, notes, created_at, updated_at) =
+            row_result.map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+        let decrypted = decrypt(&encrypted)?;
+        let auth_cookie = String::from_utf8(decrypted)
+            .map_err(|e| CollectorError::ParseFailed(format!("UTF-8 解码失败: {}", e)))?;
+        accounts.push(Account { id, name, workspace_id, auth_cookie, notes, created_at, updated_at });
+    }
+
+    Ok(accounts)
+}
+
+/// 按 id 获取单个账号,返回 None 表示不存在。auth_cookie 已解密。
+pub fn get_account(conn: &Connection, id: &str) -> Result<Option<Account>, CollectorError> {
+    use rusqlite::OptionalExtension;
+
+    let mut stmt = conn
+        .prepare("SELECT id, name, workspace_id, auth_cookie, notes, created_at, updated_at FROM accounts WHERE id = ?1")
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    let row: Option<(String, String, String, Vec<u8>, String, i64, i64)> = stmt
+        .query_row(params![id], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+                row.get(5)?,
+                row.get(6)?,
+            ))
+        })
+        .optional()
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    match row {
+        Some((id, name, workspace_id, encrypted, notes, created_at, updated_at)) => {
+            let decrypted = decrypt(&encrypted)?;
+            let auth_cookie = String::from_utf8(decrypted)
+                .map_err(|e| CollectorError::ParseFailed(format!("UTF-8 解码失败: {}", e)))?;
+            Ok(Some(Account { id, name, workspace_id, auth_cookie, notes, created_at, updated_at }))
+        }
+        None => Ok(None),
+    }
+}
+
+/// 创建新账号。auth_cookie 自动加密存储。
+pub fn create_account(conn: &Connection, form: AccountForm) -> Result<Account, CollectorError> {
+    let now = now_ms();
+    let id = generate_account_id();
+    let encrypted_cookie = encrypt(form.auth_cookie.as_bytes())?;
+
+    conn.execute(
+        "INSERT INTO accounts (id, name, workspace_id, auth_cookie, notes, created_at, updated_at) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![id, form.name, form.workspace_id, encrypted_cookie, form.notes, now, now],
+    )
+    .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    Ok(Account {
+        id,
+        name: form.name,
+        workspace_id: form.workspace_id,
+        auth_cookie: form.auth_cookie,
+        notes: form.notes,
+        created_at: now,
+        updated_at: now,
+    })
+}
+
+/// 更新账号。auth_cookie 留空则保持原值不变。
+pub fn update_account(conn: &Connection, id: &str, form: AccountForm) -> Result<Option<Account>, CollectorError> {
+    let now = now_ms();
+
+    if form.auth_cookie.is_empty() {
+        let affected = conn
+            .execute(
+                "UPDATE accounts SET name = ?1, workspace_id = ?2, notes = ?3, updated_at = ?4 WHERE id = ?5",
+                params![form.name, form.workspace_id, form.notes, now, id],
+            )
+            .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+        if affected == 0 {
+            return Ok(None);
+        }
+    } else {
+        let encrypted_cookie = encrypt(form.auth_cookie.as_bytes())?;
+        let affected = conn
+            .execute(
+                "UPDATE accounts SET name = ?1, workspace_id = ?2, auth_cookie = ?3, notes = ?4, updated_at = ?5 WHERE id = ?6",
+                params![form.name, form.workspace_id, encrypted_cookie, form.notes, now, id],
+            )
+            .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+        if affected == 0 {
+            return Ok(None);
+        }
+    }
+
+    // 读回更新后的数据
+    get_account(conn, id)
+}
+
+/// 删除账号。返回 true 表示存在并已删除,false 表示未找到。
+pub fn delete_account(conn: &Connection, id: &str) -> Result<bool, CollectorError> {
+    let affected = conn
+        .execute("DELETE FROM accounts WHERE id = ?1", params![id])
+        .map_err(|e| CollectorError::QueryFailed(e.to_string()))?;
+
+    Ok(affected > 0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    fn open_temp_db() -> (TempDir, Connection) {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        init_schema(&db_path).unwrap();
+        let conn = Connection::open(&db_path).unwrap();
+        (dir, conn)
+    }
+
+    #[test]
+    fn test_create_and_list_account() {
+        let (_dir, conn) = open_temp_db();
+        let form = AccountForm {
+            name: "测试账号".to_string(),
+            workspace_id: "wrk_test".to_string(),
+            auth_cookie: "Fe26.2**test-cookie-value**".to_string(),
+            notes: "备注".to_string(),
+        };
+
+        let created = create_account(&conn, form).unwrap();
+        assert!(created.id.starts_with("acc_"));
+        assert_eq!(created.name, "测试账号");
+        assert_eq!(created.workspace_id, "wrk_test");
+        assert_eq!(created.auth_cookie, "Fe26.2**test-cookie-value**");
+        assert_eq!(created.notes, "备注");
+        assert!(created.created_at > 0);
+        assert_eq!(created.created_at, created.updated_at);
+
+        let list = list_accounts(&conn).unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, created.id);
+        assert_eq!(list[0].auth_cookie, "Fe26.2**test-cookie-value**");
+    }
+
+    #[test]
+    fn test_get_account() {
+        let (_dir, conn) = open_temp_db();
+        let form = AccountForm {
+            name: "get-test".to_string(),
+            workspace_id: "wrk_abc".to_string(),
+            auth_cookie: "cookie123".to_string(),
+            notes: String::new(),
+        };
+        let created = create_account(&conn, form).unwrap();
+
+        let found = get_account(&conn, &created.id).unwrap();
+        assert!(found.is_some());
+        assert_eq!(found.unwrap().name, "get-test");
+
+        // nonexistent id
+        let none = get_account(&conn, "acc_nonexistent").unwrap();
+        assert!(none.is_none());
+    }
+
+    #[test]
+    fn test_update_account_keep_cookie() {
+        let (_dir, conn) = open_temp_db();
+        let form = AccountForm {
+            name: "old".to_string(),
+            workspace_id: "wrk_old".to_string(),
+            auth_cookie: "secret-cookie".to_string(),
+            notes: String::new(),
+        };
+        let created = create_account(&conn, form).unwrap();
+
+        // Update with empty auth_cookie -> keep existing
+        let update_form = AccountForm {
+            name: "new-name".to_string(),
+            workspace_id: "wrk_new".to_string(),
+            auth_cookie: String::new(), // keep existing
+            notes: "new-notes".to_string(),
+        };
+        let updated = update_account(&conn, &created.id, update_form).unwrap();
+        assert!(updated.is_some());
+        let acct = updated.unwrap();
+        assert_eq!(acct.name, "new-name");
+        assert_eq!(acct.workspace_id, "wrk_new");
+        assert_eq!(acct.auth_cookie, "secret-cookie"); // unchanged
+        assert_eq!(acct.notes, "new-notes");
+    }
+
+    #[test]
+    fn test_update_account_change_cookie() {
+        let (_dir, conn) = open_temp_db();
+        let form = AccountForm {
+            name: "old".to_string(),
+            workspace_id: "wrk_old".to_string(),
+            auth_cookie: "old-cookie".to_string(),
+            notes: String::new(),
+        };
+        let created = create_account(&conn, form).unwrap();
+
+        // Update with new auth_cookie
+        let update_form = AccountForm {
+            name: "old".to_string(),
+            workspace_id: "wrk_old".to_string(),
+            auth_cookie: "new-cookie".to_string(),
+            notes: String::new(),
+        };
+        let updated = update_account(&conn, &created.id, update_form).unwrap();
+        assert!(updated.is_some());
+        assert_eq!(updated.unwrap().auth_cookie, "new-cookie");
+    }
+
+    #[test]
+    fn test_update_account_nonexistent() {
+        let (_dir, conn) = open_temp_db();
+        let form = AccountForm {
+            name: "nope".to_string(),
+            workspace_id: "wrk_none".to_string(),
+            auth_cookie: String::new(),
+            notes: String::new(),
+        };
+        let result = update_account(&conn, "acc_nonexistent", form).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_delete_account() {
+        let (_dir, conn) = open_temp_db();
+        let form = AccountForm {
+            name: "to-delete".to_string(),
+            workspace_id: "wrk_del".to_string(),
+            auth_cookie: "del-cookie".to_string(),
+            notes: String::new(),
+        };
+        let created = create_account(&conn, form).unwrap();
+
+        let deleted = delete_account(&conn, &created.id).unwrap();
+        assert!(deleted);
+
+        let list = list_accounts(&conn).unwrap();
+        assert_eq!(list.len(), 0);
+
+        // Delete nonexistent
+        let no_deleted = delete_account(&conn, "acc_nonexistent").unwrap();
+        assert!(!no_deleted);
+    }
+
+    #[test]
+    fn test_migrate_from_settings_noop_when_accounts_exist() {
+        let (_dir, conn) = open_temp_db();
+        // accounts table is empty, and settings has no cookie -> no migration
+        let list = list_accounts(&conn).unwrap();
+        assert_eq!(list.len(), 0);
+    }
+
+    #[test]
+    fn test_migrate_from_settings_with_cookie() {
+        // Create a fresh DB without init_schema, set up settings, then init
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+
+        // Phase 1: create schema + insert old settings cookie
+        {
+            let conn = Connection::open(&db_path).unwrap();
+            conn.execute_batch(
+                "CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value BLOB,
+                    updated_at INTEGER
+                );"
+            ).unwrap();
+            let cookie_val = encrypt(b"Fe26.2**legacy-cookie**").unwrap();
+            conn.execute(
+                "INSERT INTO settings (key, value, updated_at) VALUES ('opencode_auth_cookie', ?1, 1)",
+                params![cookie_val],
+            ).unwrap();
+            let ws_val = encrypt(b"wrk_legacy").unwrap();
+            conn.execute(
+                "INSERT INTO settings (key, value, updated_at) VALUES ('opencode_workspace_id', ?1, 1)",
+                params![ws_val],
+            ).unwrap();
+        }
+
+        // Phase 2: init_schema (should migrate)
+        init_schema(&db_path).unwrap();
+        let conn = Connection::open(&db_path).unwrap();
+        let list = list_accounts(&conn).unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].name, "默认");
+        assert_eq!(list[0].auth_cookie, "Fe26.2**legacy-cookie**");
+        assert_eq!(list[0].workspace_id, "wrk_legacy");
+    }
+
+    #[test]
+    fn test_migrate_from_settings_no_cookie_skips() {
+        // accounts table empty, settings has no cookie -> skip
+        let (_dir, conn) = open_temp_db();
+        let list = list_accounts(&conn).unwrap();
+        assert_eq!(list.len(), 0);
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_roundtrip() {
+        let original = b"Fe26.2**sensitive-data**";
+        let encrypted = encrypt(original).unwrap();
+        assert_ne!(encrypted, original);
+        let decrypted = decrypt(&encrypted).unwrap();
+        assert_eq!(decrypted, original);
+    }
 }
