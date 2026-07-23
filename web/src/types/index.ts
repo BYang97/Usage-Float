@@ -42,3 +42,20 @@ export interface UsageData {
 export interface UsageProvider {
   getUsageData(): Promise<UsageData>;
 }
+
+export interface Account {
+  id: string;
+  name: string;
+  workspace_id: string;
+  auth_cookie: string;
+  notes: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface AccountForm {
+  name: string;
+  workspace_id: string;
+  auth_cookie: string;
+  notes: string;
+}
