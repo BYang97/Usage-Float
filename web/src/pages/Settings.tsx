@@ -6,16 +6,15 @@ import { Sidebar } from '../components/Sidebar';
 interface Props { onNavigate: (page: string) => void }
 
 export function Settings({ onNavigate }: Props) {
-  const [cookie, setCookie] = useState('');
   const [workspaceId, setWorkspaceId] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
-  const cookieRef = useRef<HTMLTextAreaElement>(null);
+  const cookieRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // 尝试加载已保存的 cookie + workspace_id
     invoke<string>('get_opencode_cookie')
-      .then(val => { if (val) setCookie(val); })
+      .then(val => { if (val && cookieRef.current) cookieRef.current.value = val; })
       .catch(() => { /* ignore, cookie not set */ });
     invoke<string>('get_opencode_workspace_id')
       .then(val => { if (val) setWorkspaceId(val); })
@@ -119,24 +118,24 @@ export function Settings({ onNavigate }: Props) {
                   }}
                 />
               </div>
-              <textarea
+              <input
+                type="text"
                 ref={cookieRef}
-                defaultValue={cookie}
-                placeholder="粘贴 Cookie 值，形如 auth=Fe26.2..."
-                rows={4}
+                defaultValue=""
+                placeholder="粘贴 Cookie 值，形如 Fe26.2..."
+                autoComplete="off"
                 style={{
                   width: '100%',
                   boxSizing: 'border-box',
-                  padding: '10px 12px',
+                  padding: '8px 12px',
                   borderRadius: 6,
                   border: `1px solid ${t.surfaceBorder}`,
                   background: t.surface,
                   color: t.textPrimary,
                   fontSize: 12,
                   fontFamily: 'monospace',
-                  resize: 'vertical',
                   outline: 'none',
-                  lineHeight: 1.5,
+                  WebkitTextSecurity: 'disc',
                 }}
               />
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

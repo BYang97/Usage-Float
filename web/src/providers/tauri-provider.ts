@@ -13,44 +13,16 @@ import type { UsageProvider, UsageData, AccountInfo, QuotaInfo, TokenInfo, Model
  */
 export class TauriProvider implements UsageProvider {
   async getUsageData(): Promise<UsageData> {
-    const [account, quota, tokens] = await Promise.all([
-      this.safeInvokeAccount(),
-      this.safeInvokeQuota(),
-      this.safeInvokeTokens(),
-    ]);
-
-    return {
-      account,
-      quota,
-      tokens,
-      models: this.getModelUsage(),
-    };
-  }
-
-  private async safeInvokeAccount(): Promise<AccountInfo> {
     try {
-      return await invoke<AccountInfo>('get_account_info');
+      return await invoke<UsageData>('get_usage_data');
     } catch (err) {
-      console.error('[TauriProvider] get_account_info 失败，使用降级数据:', err);
-      return this.getFallbackAccount();
-    }
-  }
-
-  private async safeInvokeQuota(): Promise<QuotaInfo> {
-    try {
-      return await invoke<QuotaInfo>('get_quota_info');
-    } catch (err) {
-      console.error('[TauriProvider] get_quota_info 失败，使用降级数据:', err);
-      return this.getFallbackQuota();
-    }
-  }
-
-  private async safeInvokeTokens(): Promise<TokenInfo> {
-    try {
-      return await invoke<TokenInfo>('get_token_records');
-    } catch (err) {
-      console.error('[TauriProvider] get_token_records 失败，使用降级数据:', err);
-      return this.getFallbackTokens();
+      console.error('[TauriProvider] get_usage_data 失败，使用降级数据:', err);
+      return {
+        account: this.getFallbackAccount(),
+        quota: this.getFallbackQuota(),
+        tokens: this.getFallbackTokens(),
+        models: this.getModelUsage(),
+      };
     }
   }
 
