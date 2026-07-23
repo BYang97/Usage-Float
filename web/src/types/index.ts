@@ -59,3 +59,19 @@ export interface AccountForm {
   auth_cookie: string;
   notes: string;
 }
+
+export interface UsageResult {
+  plan: string;
+  status: PlanStatus;
+  expireDate: string;
+  fiveHourPercent: number;
+  fiveHourReset: string;
+  weeklyPercent: number;
+  weeklyReset: string;
+  monthlyPercent: number;
+}
+
+export interface AccountWithUsage {
+  account: Account;
+  usage: UsageResult | null;
+}
