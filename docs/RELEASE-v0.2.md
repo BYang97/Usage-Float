@@ -14,7 +14,7 @@ npx @tauri-apps/cli build
 
 ## 校验
 
-- **SHA256**:`1c22f9f8d1bb68f25e7b9145594cc9d45d5d42c3c5150820e2eff89fd0ec0b30`(本机构建,同源同配置可复现)
+- **SHA256**:`d0a9b819bd6a2dfbcd7036007a8e5b6c6dee920ab1a5eadd7e7204e156a43710`(本机构建,同源同配置可复现)
 
 ## 能力(v0.1 基础 + v0.2 新增)
 
@@ -29,7 +29,7 @@ npx @tauri-apps/cli build
 - **workspaceId**:设置面板新增 workspaceId 输入(`wrk_xxx`,从 opencode.ai 工作区 URL 获取)
 - **app 代理**:读 Windows 系统代理(reqwest rustls-tls + 注册表代理),支持 MITM 代理环境
 - **配额缓存**:5min TTL,避免频繁打 opencode.ai
-- 端到端验证通过(真跑:rolling 0% / weekly 0% / monthly 87%)
+- 端到端验证通过(e2e_verify 真跑:rolling 1% / weekly 1% / monthly 88%;或ca computer UI 端到端:cookie 填充 -> 保存 -> 首页显示真实配额 88%)
 
 ## 测试
 
@@ -41,6 +41,8 @@ npx @tauri-apps/cli build
 - 1 proxy(系统代理读取)
 
 **端到端验证**:`cargo run --example e2e_verify`(设环境变量 `OPENCODE_COOKIE` + `OPENCODE_WORKSPACE_ID`),真跑 opencode.ai 验证配额获取整条链(proxy.rs 代理 -> reqwest::Proxy -> fetch_quota -> HTML 解析)。
+
+**或ca computer UI 端到端**:或ca computer 驱动 Tauri webview,set-value 填 cookie+workspaceId -> 保存 -> 首页显示真实配额(monthly 88%)。修复前端 invoke 接线(TauriProvider 改调 `get_usage_data`,之前调不存在的命令导致全 fallback 0%)+ cookie 控件(`type=text` + `WebkitTextSecurity:'disc'` 视觉遮罩 + 非受控 ref,绕过或ca computer 对 password 字段/受控 onChange 的限制)。
 
 ## 已知限制
 
