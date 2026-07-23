@@ -1,17 +1,15 @@
-import { useState, useEffect, useCallback, useRef, type MouseEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { Dashboard } from './pages/Dashboard';
 import { Settings } from './pages/Settings';
-import { FloatWidget } from './components/FloatWidget';
-import { getUsageData, subscribe, startAutoRefresh, stopAutoRefresh } from './services/usage-service';
-import type { QuotaInfo } from './types';
+import { startAutoRefresh, stopAutoRefresh } from './services/usage-service';
 
 /** 检测是否运行在 Tauri 环境 */
 function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
-/** 显示 Tauri 悬浮窗口（从主窗口唤醒） */
+/** 显示悬浮窗口(独立 OS 窗口,可拖到桌面任意位置;由 tauri.conf.json 静态配置 visible:false) */
 async function showFloatWindow() {
   if (!isTauri()) return;
   try {
@@ -19,6 +17,8 @@ async function showFloatWindow() {
     if (floatWin) {
       await floatWin.show();
       await floatWin.setFocus();
+    } else {
+      console.warn('[App] float window not found');
     }
   } catch (err) {
     console.error('[App] showFloatWindow failed:', err);
@@ -27,57 +27,11 @@ async function showFloatWindow() {
 
 export default function App() {
   const [page, setPage] = useState('dashboard');
-  const [floatVisible, setFloatVisible] = useState(true);
-  const [quota, setQuota] = useState<QuotaInfo | null>(null);
-
-  const loadQuota = useCallback(async () => {
-    try {
-      const data = await getUsageData();
-      setQuota(data.quota);
-    } catch {
-      // 失败时保留上次数据，Dashboard 内部会处理错误状态
-    }
-  }, []);
 
   useEffect(() => {
-    // 首次加载
-    loadQuota();
-
-    // 订阅数据变更
-    const unsub = subscribe((data) => {
-      setQuota(data.quota);
-    });
-
-    // 启动自动刷新（5 分钟）
+    // 启动定时刷新(5 分钟),触发 refreshAndNotify 通知 Dashboard + FloatWindow
     startAutoRefresh(5 * 60 * 1000);
-
-    return () => {
-      unsub();
-      stopAutoRefresh();
-    };
-  }, [loadQuota]);
-
-  // ─── 拖拽状态（主窗口叠加层用 JS 拖拽） ──────────────────────
-  const [pos, setPos] = useState({ x: window.innerWidth - 340, y: window.innerHeight - 220 });
-  const dragRef = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({
-    dragging: false, offsetX: 0, offsetY: 0,
-  });
-
-  const onOverlayMouseDown = useCallback((e: MouseEvent) => {
-    const drag = dragRef.current;
-    drag.dragging = true;
-    drag.offsetX = e.clientX - pos.x;
-    drag.offsetY = e.clientY - pos.y;
-  }, [pos]);
-
-  const onOverlayMouseMove = useCallback((e: MouseEvent) => {
-    const drag = dragRef.current;
-    if (!drag.dragging) return;
-    setPos({ x: e.clientX - drag.offsetX, y: e.clientY - drag.offsetY });
-  }, []);
-
-  const onOverlayMouseUp = useCallback(() => {
-    dragRef.current.dragging = false;
+    return () => stopAutoRefresh();
   }, []);
 
   return (
@@ -85,36 +39,15 @@ export default function App() {
       {page === 'dashboard' && (
         <Dashboard
           onNavigate={p => setPage(p)}
-          onMinimize={() => {
-            setFloatVisible(true);
-            showFloatWindow();
-          }}
+          onMinimize={() => { showFloatWindow(); }}
           onClose={() => window.close()}
         />
       )}
       {page === 'settings' && <Settings onNavigate={p => setPage(p)} />}
       {(page === 'history' || page === 'models') && <Dashboard onNavigate={p => setPage(p)} />}
 
-      {/* 主窗口叠加层浮窗 — 使用 JS 拖拽在主窗口内定位 */}
-      {floatVisible && quota && (
-        <div
-          onMouseDown={onOverlayMouseDown}
-          onMouseMove={onOverlayMouseMove}
-          onMouseUp={onOverlayMouseUp}
-          onMouseLeave={onOverlayMouseUp}
-          style={{
-            position: 'fixed', zIndex: 50, cursor: 'grab',
-            left: pos.x, top: pos.y,
-          }}
-        >
-          <FloatWidget
-            percentage={quota.fiveHourPercent}
-            resetTime={quota.fiveHourReset}
-            onOpenDashboard={() => { setPage('dashboard'); setFloatVisible(false); }}
-            onClose={() => setFloatVisible(false)}
-          />
-        </div>
-      )}
+      {/* 悬浮窗为独立 OS 窗口(label=float, tauri.conf.json 配置无边框+透明+置顶+skipTaskbar),
+          不再在主窗口内叠加;由 tray 或 showFloatWindow 控制 show/hide */}
     </div>
   );
 }

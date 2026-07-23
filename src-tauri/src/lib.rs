@@ -322,6 +322,62 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // 系统托盘:show/hide 主窗口 + 悬浮窗 + 退出
+            let _tray = tauri::tray::TrayIconBuilder::with_id("main-tray")
+                .icon(app.default_window_icon().unwrap().clone())
+                .tooltip("OpenCode Usage Float")
+                .menu(&tauri::menu::Menu::with_items(app, &[
+                    &tauri::menu::MenuItem::with_id(app, "show_main", "显示主窗口", true, None::<&str>)?,
+                    &tauri::menu::MenuItem::with_id(app, "show_float", "显示悬浮窗", true, None::<&str>)?,
+                    &tauri::menu::MenuItem::with_id(app, "hide_float", "隐藏悬浮窗", true, None::<&str>)?,
+                    &tauri::menu::PredefinedMenuItem::separator(app)?,
+                    &tauri::menu::MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?,
+                ])?)
+                .on_menu_event(|app, event| {
+                    match event.id.as_ref() {
+                        "show_main" => {
+                            if let Some(w) = app.get_webview_window("main") {
+                                let _ = w.show();
+                                let _ = w.set_focus();
+                            }
+                        }
+                        "show_float" => {
+                            if let Some(w) = app.get_webview_window("float") {
+                                let _ = w.show();
+                                let _ = w.set_focus();
+                            }
+                        }
+                        "hide_float" => {
+                            if let Some(w) = app.get_webview_window("float") {
+                                let _ = w.hide();
+                            }
+                        }
+                        "quit" => app.exit(0),
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    // 左键点击托盘图标:切换悬浮窗显示
+                    if let tauri::tray::TrayIconEvent::Click {
+                        button: tauri::tray::MouseButton::Left,
+                        button_state: tauri::tray::MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(w) = app.get_webview_window("float") {
+                            if w.is_visible().unwrap_or(false) {
+                                let _ = w.hide();
+                            } else {
+                                let _ = w.show();
+                                let _ = w.set_focus();
+                            }
+                        }
+                    }
+                })
+                .build(app)?;
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

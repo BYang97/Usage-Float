@@ -21,6 +21,21 @@
         "resizable": true,
         "fullscreen": false,
         "center": true
+      },
+      {
+        "label": "float",
+        "url": "index.html?window=float",
+        "title": "",
+        "width": 320,
+        "height": 180,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "visible": false,
+        "x": 100,
+        "y": 100
       }
     ],
     "security": {

@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { FloatWidget } from './FloatWidget';
 import { getQuota, subscribe, startAutoRefresh, stopAutoRefresh } from '../services/usage-service';
 import type { QuotaInfo } from '../types';
@@ -64,11 +65,18 @@ export function FloatWindow() {
     }
   };
 
-  /** 打开仪表盘 — 在主窗口显示并聚焦（后续可完善为 IPC 通信） */
-  const handleOpenDashboard = () => {
-    // 可通过 WebviewWindow.getByLabel('main') 调起主窗口（后续实现）
+  /** 打开仪表盘 - 显示并聚焦主窗口 */
+  const handleOpenDashboard = async () => {
+    try {
+      const mainWin = await WebviewWindow.getByLabel("main");
+      if (mainWin) {
+        await mainWin.show();
+        await mainWin.setFocus();
+      }
+    } catch (err) {
+      console.error("[FloatWindow] open dashboard failed:", err);
+    }
   };
-
   // 加载中：未出错且尚无数据，最小占位
   if (!quota && !error) {
     return null;
