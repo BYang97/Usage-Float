@@ -2,6 +2,7 @@ pub mod collector;
 mod database;
 mod mock;
 mod models;
+pub mod proxy;
 
 use collector::model::{ApiAccount, ApiQuota, ApiWindow};
 use models::UsageData;
