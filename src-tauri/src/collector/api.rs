@@ -159,12 +159,25 @@ fn parse_usage(html: &str, key: &str) -> Result<ApiWindow, CollectorError> {
     })
 }
 
-/// 从 HTML 解析 plan(plan:$R[N]="go-monthly")。
+/// 从 HTML 解析 plan。
+/// 优先级:
+/// 1. subscriptionPlan:"xxx" (有值时,如 "go-monthly")
+/// 2. plan:$R[N]="xxx" (旧格式/参考项目)
+/// 3. useBalance:!0 (lite 余额模式) -> "Lite"
 fn parse_plan(html: &str) -> Option<String> {
-    let re = Regex::new(r#"plan:\$R\[\d+\]="([^"]+)""#).ok()?;
-    re.captures(html)
-        .and_then(|c| c.get(1))
-        .map(|m| m.as_str().to_string())
+    // 1. subscriptionPlan:"xxx" (真实页面格式,有值时)
+    if let Some(c) = Regex::new(r#"subscriptionPlan:"([^"]+)""#).ok()?.captures(html) {
+        return Some(c[1].to_string());
+    }
+    // 2. plan:$R[N]="xxx" (兼容旧格式/参考项目)
+    if let Some(c) = Regex::new(r#"plan:\$R\[\d+\]="([^"]+)""#).ok()?.captures(html) {
+        return Some(c[1].to_string());
+    }
+    // 3. lite 余额模式
+    if html.contains("useBalance:!0") {
+        return Some("Lite".to_string());
+    }
+    None
 }
 
 fn parse_field_f64(obj: &str, field: &str) -> Option<f64> {
@@ -212,8 +225,26 @@ mod tests {
     }
 
     #[test]
-    fn parse_plan_extracts() {
+    fn parse_plan_extracts_old_format() {
         let html = r#"plan:$R[5]="go-monthly""#;
+        assert_eq!(parse_plan(html), Some("go-monthly".to_string()));
+    }
+
+    #[test]
+    fn parse_plan_extracts_subscription_plan() {
+        let html = r#"subscriptionPlan:"go-monthly""#;
+        assert_eq!(parse_plan(html), Some("go-monthly".to_string()));
+    }
+
+    #[test]
+    fn parse_plan_extracts_lite_mode() {
+        let html = r#"subscriptionPlan:null,...useBalance:!0"#;
+        assert_eq!(parse_plan(html), Some("Lite".to_string()));
+    }
+
+    #[test]
+    fn parse_plan_extracts_priority_subscription_over_lite() {
+        let html = r#"subscriptionPlan:"go-monthly",useBalance:!0"#;
         assert_eq!(parse_plan(html), Some("go-monthly".to_string()));
     }
 
