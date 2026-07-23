@@ -1,9 +1,0 @@
-你现在转为测试工程师角色,继续在当前 worktree(phase2-collector)工作。你刚实现了 src-tauri/src/collector/ 的 collector 逻辑。现在请为它编写 Rust 测试,覆盖 docs/contract.md 第8节的全部场景。
-
-本地 SQLite 采集测试:用 tempfile crate 建临时目录和临时 db 文件,在里面建 session 表并插入样例行,测试 resolve_opencode_db(通过设 OPENCODE_DB 环境变量指向临时 db 来测)、read_all_sessions、aggregate_local 三个函数。覆盖场景:无 OpenCode 环境时 resolve 返回 NotFound;数据为空时 aggregate 返回全零结构不 panic;数据损坏(非 SQLite 文件或缺列)返回 OpenFailed 或 QueryFailed;多 session 时 aggregate 正确累加且按 model 正确分组;时间窗口分桶,给定固定 now_ms 和若干 time_created 验证 7 天桶归属正确;model JSON 解析,合法 JSON 和缺 variant 的 JSON 都能容错。
-
-opencode.ai API 测试:用 httpmock crate 建 mock HTTP server,端点先占位为 /quota 和 /account,测试 OpenCodeApiClient 的 fetch_quota 和 fetch_account:有 cookie 且 API 返回配额时正确解析;无 cookie 时返回 NoCookie;cookie 失效返回 401 时得到 Unauthorized;API 超时或 5xx 时得到 ApiError;配额缓存生效,重复调用在刷新间隔内不重复打 API。注意 api.rs 目前是占位空文件,API 测试会编译失败属预期,但把测试写好,待 api.rs 实现后即通。
-
-测试放 src-tauri/tests/ 目录下,按场景分文件。需要的测试依赖 tempfile 和 httpmock,加进 Cargo.toml 的 dev-dependencies 段。
-
-完成后运行 cargo test,看本地 SQLite 采集测试是否通过(API 测试因 api.rs 未实现会失败属预期),把 cargo test 的结果贴出来。遇到契约或实现不清楚的地方,在输出里标注疑问。
