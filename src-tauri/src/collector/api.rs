@@ -47,11 +47,18 @@ impl OpenCodeApiClient {
         base_url: String,
         timeout_secs: u64,
     ) -> Self {
-        let client = reqwest::Client::builder()
+        let mut builder = reqwest::Client::builder()
             .timeout(Duration::from_secs(timeout_secs))
-            .user_agent(USER_AGENT)
-            .build()
-            .expect("reqwest Client 初始化不应失败");
+            .user_agent(USER_AGENT);
+
+        // 读系统代理(reqwest 不读 Windows 注册表,这里主动读)
+        if let Some(proxy_url) = crate::proxy::read_system_proxy() {
+            if let Ok(proxy) = reqwest::Proxy::all(&proxy_url) {
+                builder = builder.proxy(proxy);
+            }
+        }
+
+        let client = builder.build().expect("reqwest Client 初始化不应失败");
         Self {
             cookie,
             workspace_id,
