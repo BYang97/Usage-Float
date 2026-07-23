@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { t } from '../tokens';
 import { Sidebar } from '../components/Sidebar';
@@ -10,6 +10,7 @@ export function Settings({ onNavigate }: Props) {
   const [workspaceId, setWorkspaceId] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const cookieRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     // 尝试加载已保存的 cookie + workspace_id
@@ -25,7 +26,8 @@ export function Settings({ onNavigate }: Props) {
     setSaved(false);
     setError('');
     try {
-      await invoke('set_opencode_cookie', { cookie });
+      const cookieVal = cookieRef.current?.value ?? '';
+      await invoke('set_opencode_cookie', { cookie: cookieVal });
       await invoke('set_opencode_workspace_id', { workspaceId });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -118,8 +120,8 @@ export function Settings({ onNavigate }: Props) {
                 />
               </div>
               <textarea
-                value={cookie}
-                onChange={e => { setCookie(e.target.value); setSaved(false); }}
+                ref={cookieRef}
+                defaultValue={cookie}
                 placeholder="粘贴 Cookie 值，形如 auth=Fe26.2..."
                 rows={4}
                 style={{
