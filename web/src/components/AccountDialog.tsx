@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { t } from '../tokens';
 import type { Account, AccountForm } from '../types';
@@ -13,8 +13,8 @@ interface Props {
 export function AccountDialog({ open, account, onClose, onSaved }: Props) {
   const [name, setName] = useState('');
   const [workspaceId, setWorkspaceId] = useState('');
-  const [authCookie, setAuthCookie] = useState('');
   const [notes, setNotes] = useState('');
+  const cookieRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,7 +22,7 @@ export function AccountDialog({ open, account, onClose, onSaved }: Props) {
     if (open) {
       setName(account?.name ?? '');
       setWorkspaceId(account?.workspace_id ?? '');
-      setAuthCookie('');
+      if (cookieRef.current) cookieRef.current.value = '';
       setNotes(account?.notes ?? '');
       setError('');
     }
@@ -35,7 +35,7 @@ export function AccountDialog({ open, account, onClose, onSaved }: Props) {
       const form: AccountForm = {
         name,
         workspace_id: workspaceId,
-        auth_cookie: authCookie,
+        auth_cookie: cookieRef.current?.value ?? '',
         notes,
       };
       if (account) {
@@ -138,8 +138,9 @@ export function AccountDialog({ open, account, onClose, onSaved }: Props) {
             <label style={{ fontSize: 12, color: t.textSecondary }}>Auth Cookie</label>
             <input
               type="text"
-              value={authCookie}
-              onChange={e => { setAuthCookie(e.target.value); setError(''); }}
+              ref={cookieRef}
+              defaultValue=""
+              onChange={e => { setError(''); }}
               placeholder="Fe26.2..."
               autoComplete="off"
               style={{

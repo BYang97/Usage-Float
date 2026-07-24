@@ -351,7 +351,6 @@ pub fn set_account_cache(conn: &Connection, plan: &str) -> Result<(), CollectorE
 // ===== 多账号管理(accounts 表 CRUD) =====
 
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Account {
     pub id: String,
     pub name: String,
@@ -363,7 +362,6 @@ pub struct Account {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct AccountForm {
     pub name: String,
     pub workspace_id: String,
