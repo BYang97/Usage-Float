@@ -6,6 +6,7 @@
 // 参考实现: https://github.com/Ruinique/opencode-go-dashboard
 // ============================================================
 
+use crate::collector::error::CollectorError;
 use crate::collector::model::{ApiQuota, ApiWindow, UsageHistoryItem};
 use regex::Regex;
 use std::time::Duration;
