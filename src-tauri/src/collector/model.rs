@@ -21,6 +21,8 @@ pub struct RawSessionUsage {
 #[serde(rename_all = "camelCase")]
 pub struct LocalAggregate {
     pub total_tokens: i64,
+    pub tokens_7d: i64,
+    pub tokens_30d: i64,
     pub total_cost: f64,
     pub daily_history: Vec<DayBucket>,
     pub models: Vec<ModelBreakdown>,

@@ -122,33 +122,39 @@ pub fn read_all_sessions(db_path: &PathBuf) -> Result<Vec<RawSessionUsage>, Coll
 
 /// 本地用量聚合:按 model 分组 + 逐日历史(近 7 天)。
 pub fn aggregate_local(raw: &[RawSessionUsage], now_ms: i64) -> LocalAggregate {
-    let total_tokens: i64 = raw
-        .iter()
-        .map(|s| {
-            s.tokens_input
-                .saturating_add(s.tokens_output)
-                .saturating_add(s.tokens_reasoning)
-                .saturating_add(s.tokens_cache_read)
-                .saturating_add(s.tokens_cache_write)
-        })
-        .sum();
+    let sum_tokens = |s: &RawSessionUsage| -> i64 {
+        s.tokens_input
+            .saturating_add(s.tokens_output)
+            .saturating_add(s.tokens_reasoning)
+            .saturating_add(s.tokens_cache_read)
+            .saturating_add(s.tokens_cache_write)
+    };
 
+    let total_tokens: i64 = raw.iter().map(|s| sum_tokens(s)).sum();
     let total_cost: f64 = raw.iter().map(|s| s.cost).sum();
 
-    // --- daily_history: 近 7 天,按周一到周日中文标签 ---
     let day_ms: i64 = 86_400_000;
+    let cutoff_7d = now_ms - 7 * day_ms;
+    let cutoff_30d = now_ms - 30 * day_ms;
+
+    let tokens_7d: i64 = raw.iter()
+        .filter(|s| s.time_created >= cutoff_7d)
+        .map(|s| sum_tokens(s))
+        .sum();
+
+    let tokens_30d: i64 = raw.iter()
+        .filter(|s| s.time_created >= cutoff_30d)
+        .map(|s| sum_tokens(s))
+        .sum();
+
+    // --- daily_history: 近 7 天,按周一到周日中文标签 ---
     let today_idx = now_ms / day_ms;
     let mut day_tokens = [0f64; 7];
     for s in raw {
         let d = s.time_created / day_ms;
         let offset = today_idx - d;
         if offset >= 0 && (offset as usize) < 7 {
-            let tokens = s
-                .tokens_input
-                .saturating_add(s.tokens_output)
-                .saturating_add(s.tokens_reasoning)
-                .saturating_add(s.tokens_cache_read)
-                .saturating_add(s.tokens_cache_write) as f64;
+            let tokens = sum_tokens(s) as f64;
             day_tokens[offset as usize] += tokens;
         }
     }
@@ -165,13 +171,12 @@ pub fn aggregate_local(raw: &[RawSessionUsage], now_ms: i64) -> LocalAggregate {
     let mut model_tokens: std::collections::HashMap<String, i64> =
         std::collections::HashMap::new();
     for s in raw {
-        let tokens = s
-            .tokens_input
-            .saturating_add(s.tokens_output)
-            .saturating_add(s.tokens_reasoning)
-            .saturating_add(s.tokens_cache_read)
-            .saturating_add(s.tokens_cache_write);
-        *model_tokens.entry(s.model_id.clone()).or_insert(0) += tokens;
+        let model_name = if s.model_id.is_empty() {
+            "未知".to_string()
+        } else {
+            s.model_id.clone()
+        };
+        *model_tokens.entry(model_name).or_insert(0) += sum_tokens(s);
     }
 
     let models: Vec<ModelBreakdown> = model_tokens
@@ -200,6 +205,8 @@ pub fn aggregate_local(raw: &[RawSessionUsage], now_ms: i64) -> LocalAggregate {
 
     LocalAggregate {
         total_tokens,
+        tokens_7d,
+        tokens_30d,
         total_cost,
         daily_history,
         models,
