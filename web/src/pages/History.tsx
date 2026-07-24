@@ -7,7 +7,7 @@ import { getUsageData, subscribe } from '../services/usage-service';
 import type { TokenInfo, UsageHistoryItem, Account } from '../types';
 import { t } from '../tokens';
 
-interface Props { onNavigate: (page: string) => void }
+interface Props { onNavigate: (page: string) => void; onMinimize?: () => void; onClose?: () => void }
 
 function formatTime(ts: number): string {
   if (!ts) return '—';
@@ -16,7 +16,7 @@ function formatTime(ts: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function History({ onNavigate }: Props) {
+export function History({ onNavigate, onMinimize, onClose }: Props) {
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [tokens, setTokens] = useState<TokenInfo | null>(null);
@@ -76,7 +76,7 @@ export function History({ onNavigate }: Props) {
     <div style={{ display: 'flex', height: '100%' }}>
       <Sidebar active="history" onNavigate={onNavigate} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header onSettings={() => onNavigate('settings')} onMinimize={undefined} onClose={undefined} />
+        <Header onSettings={() => onNavigate('settings')} onMinimize={onMinimize} onClose={onClose} />
 
         {loadState === 'loading' && (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
@@ -93,6 +93,16 @@ export function History({ onNavigate }: Props) {
             <span style={{ fontSize: 12, color: t.textTertiary, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
               {errorMsg || '无法获取使用记录数据'}
             </span>
+            <button
+              onClick={() => { loadData(); loadHistory(); }}
+              style={{
+                marginTop: 4, padding: '8px 20px', borderRadius: 6,
+                border: 'none', background: t.accentBlue, color: '#fff',
+                fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              }}
+            >
+              重试
+            </button>
           </div>
         )}
 

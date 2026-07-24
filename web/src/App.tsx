@@ -46,8 +46,8 @@ export default function App() {
         />
       )}
       {page === 'settings' && <Settings onNavigate={p => setPage(p)} />}
-      {page === 'history' && <History onNavigate={p => setPage(p)} />}
-      {page === 'models' && <Models onNavigate={p => setPage(p)} />}
+      {page === 'history' && <History onNavigate={p => setPage(p)} onMinimize={() => { showFloatWindow(); }} onClose={() => window.close()} />}
+      {page === 'models' && <Models onNavigate={p => setPage(p)} onMinimize={() => { showFloatWindow(); }} onClose={() => window.close()} />}
 
       {/* 悬浮窗为独立 OS 窗口(label=float, tauri.conf.json 配置无边框+透明+置顶+skipTaskbar),
           不再在主窗口内叠加;由 tray 或 showFloatWindow 控制 show/hide */}

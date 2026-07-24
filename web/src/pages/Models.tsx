@@ -6,9 +6,9 @@ import { getUsageData, subscribe } from '../services/usage-service';
 import type { ModelUsageData } from '../types';
 import { t } from '../tokens';
 
-interface Props { onNavigate: (page: string) => void }
+interface Props { onNavigate: (page: string) => void; onMinimize?: () => void; onClose?: () => void }
 
-export function Models({ onNavigate }: Props) {
+export function Models({ onNavigate, onMinimize, onClose }: Props) {
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [models, setModels] = useState<ModelUsageData[] | null>(null);
@@ -42,7 +42,7 @@ export function Models({ onNavigate }: Props) {
     <div style={{ display: 'flex', height: '100%' }}>
       <Sidebar active="models" onNavigate={onNavigate} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header onSettings={() => onNavigate('settings')} onMinimize={undefined} onClose={undefined} />
+        <Header onSettings={() => onNavigate('settings')} onMinimize={onMinimize} onClose={onClose} />
 
         {loadState === 'loading' && (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
@@ -59,6 +59,16 @@ export function Models({ onNavigate }: Props) {
             <span style={{ fontSize: 12, color: t.textTertiary, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
               {errorMsg || '无法获取模型统计数据'}
             </span>
+            <button
+              onClick={() => loadData()}
+              style={{
+                marginTop: 4, padding: '8px 20px', borderRadius: 6,
+                border: 'none', background: t.accentBlue, color: '#fff',
+                fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              }}
+            >
+              重试
+            </button>
           </div>
         )}
 

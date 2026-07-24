@@ -9,8 +9,8 @@ export function ModelUsage({ models }: Props) {
       {models.map(m => (
         <div key={m.name} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: t.textPrimary }}>{m.name}</span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: m.color }}>{m.percentage}%</span>
+            <span style={{ fontSize: 13, color: t.textPrimary }}>{m.name || '未知'}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: m.color }}>{m.percentage.toFixed(1)}%</span>
           </div>
           <div style={{ width: '100%', height: 8, borderRadius: 4, overflow: 'hidden', background: t.surfaceBorder }}>
             <div style={{ width: `${m.percentage}%`, height: '100%', borderRadius: 4, background: m.color, transition: 'width 0.5s ease-in-out' }} />
