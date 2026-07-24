@@ -28,6 +28,8 @@ async fn get_usage_data(app_handle: tauri::AppHandle) -> Result<UsageData, Strin
         Some(l) => (l, true),
         None => (collector::model::LocalAggregate {
             total_tokens: 0,
+            tokens_7d: 0,
+            tokens_30d: 0,
             total_cost: 0.0,
             daily_history: vec![],
             models: vec![],
@@ -195,8 +197,8 @@ fn map_local_to_usage_data(
             quota,
             tokens: models::TokenInfo {
                 token_today,
-                token_7d: fmt_tokens(total),
-                token_30d: fmt_tokens(total),
+                token_7d: fmt_tokens(local.tokens_7d),
+                token_30d: fmt_tokens(local.tokens_30d),
                 token_history: history_records,
             },
             models,
@@ -220,7 +222,7 @@ fn build_account_info(
                     .clone()
                     .unwrap_or_else(|| mock_data.account.plan.clone()),
                 status: models::PlanStatus::Active,
-                expire_date: mock_data.account.expire_date.clone(),
+                expire_date: api.expire_date.clone().unwrap_or_else(|| "-".to_string()),
             }
         }
         None => mock_data.account.clone(),
@@ -402,6 +404,28 @@ async fn refresh_one(app_handle: tauri::AppHandle, account_id: String) -> Result
     let client = collector::api::OpenCodeApiClient::new(account.auth_cookie, account.workspace_id);
     let quota = client.fetch_quota().await
         .map_err(|e| format!("配额刷新失败: {}", e))?;
+    // 3. 写入缓存(同 fetch_api_quota)
+    let _ = database::set_quota_cache(
+        &conn,
+        "five_hour",
+        quota.five_hour.usage_percent,
+        quota.five_hour.reset_in_sec,
+    );
+    let _ = database::set_quota_cache(
+        &conn,
+        "weekly",
+        quota.weekly.usage_percent,
+        quota.weekly.reset_in_sec,
+    );
+    let _ = database::set_quota_cache(
+        &conn,
+        "monthly",
+        quota.monthly.usage_percent,
+        quota.monthly.reset_in_sec,
+    );
+    if let Some(plan) = &quota.plan {
+        let _ = database::set_account_cache(&conn, plan);
+    }
 
     Ok(UsageResult {
         plan: quota.plan,
