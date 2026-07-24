@@ -6,8 +6,7 @@
 // 参考实现: https://github.com/Ruinique/opencode-go-dashboard
 // ============================================================
 
-use crate::collector::error::CollectorError;
-use crate::collector::model::{ApiQuota, ApiWindow};
+use crate::collector::model::{ApiQuota, ApiWindow, UsageHistoryItem};
 use regex::Regex;
 use std::time::Duration;
 
@@ -134,8 +133,175 @@ impl OpenCodeApiClient {
             plan,
         })
     }
+    pub async fn fetch_usage_history(&self, cursor: i64) -> Result<Vec<UsageHistoryItem>, CollectorError> {
+        if self.cookie.is_empty() {
+            return Err(CollectorError::NoCookie);
+        }
+        if self.workspace_id.is_empty() {
+            return Err(CollectorError::NotFound);
+        }
+
+        let url = format!("{}/_server", self.base_url);
+
+        let body = serde_json::json!({
+            "t": {
+                "t": 9,
+                "i": 0,
+                "l": 2,
+                "a": [
+                    {"t": 1, "s": self.workspace_id},
+                    {"t": 0, "s": cursor.to_string()}
+                ],
+                "o": 0
+            },
+            "f": 31,
+            "m": []
+        });
+
+        let resp = self
+            .client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .header("Cookie", format!("auth={}", self.cookie))
+            .header("Origin", "opencode.ai")
+            .header("Referer", "opencode.ai")
+            .header("x-server-instance", "server-fn:2")
+            .header("x-server-id", "bfd684bfc2e4eed05cd0b518f5e4eafd3f3376e3938abb9e536e7c03df831e5c")
+            .json(&body)
+            .send()
+            .await
+            .map_err(|e| {
+                if e.is_timeout() {
+                    CollectorError::ApiError("请求超时".to_string())
+                } else if e.is_connect() {
+                    CollectorError::ApiError(format!("网络连接失败: {}", e))
+                } else {
+                    CollectorError::ApiError(e.to_string())
+                }
+            })?;
+
+        let status = resp.status();
+        if status == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(CollectorError::Unauthorized);
+        }
+        if !status.is_success() {
+            return Err(CollectorError::ApiError(format!(
+                "API 返回 HTTP {}",
+                status.as_u16()
+            )));
+        }
+
+        let text = resp
+            .text()
+            .await
+            .map_err(|e| CollectorError::ParseFailed(format!("读取响应失败: {}", e)))?;
+
+        parse_usage_history_items(&text)
+    }
 }
 
+/// 从 React Flight 响应中解析 usg_xxx 记录列表。
+fn parse_usage_history_items(response: &str) -> Result<Vec<UsageHistoryItem>, CollectorError> {
+    let mut items = Vec::new();
+    let bytes = response.as_bytes();
+    let len = bytes.len();
+    let mut pos = 0;
+    let anchor = b"id:\"usg_";
+
+    while pos + anchor.len() <= len {
+        // 找下一个 "id:\"usg_" 锚点
+        if let Some(offset) = bytes[pos..].windows(anchor.len()).position(|w| w == anchor) {
+            let abs_start = pos + offset;
+
+            // 往回找对象起始 {
+            let brace_start = bytes[..abs_start]
+                .iter()
+                .rposition(|&b| b == b'{')
+                .ok_or_else(|| CollectorError::ParseFailed("未找到 usg 对象起始".to_string()))?;
+
+            // 往前匹配完整对象 }
+            let mut depth: i32 = 0;
+            let mut brace_end = abs_start;
+            for i in brace_start..len {
+                match bytes[i] {
+                    b'{' => depth += 1,
+                    b'}' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            brace_end = i;
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            if depth != 0 {
+                return Err(CollectorError::ParseFailed(
+                    "usg 对象括号不匹配".to_string(),
+                ));
+            }
+
+            let obj = &response[brace_start..=brace_end];
+
+            let id = parse_rsc_str(obj, "id").ok_or_else(|| {
+                CollectorError::ParseFailed("usg 记录缺少 id".to_string())
+            })?;
+            let time_created = parse_rsc_i64(obj, "timeCreated").ok_or_else(|| {
+                CollectorError::ParseFailed("usg 记录缺少 timeCreated".to_string())
+            })?;
+            let model = parse_rsc_str(obj, "model").unwrap_or_default();
+            let provider = parse_rsc_str(obj, "provider").unwrap_or_default();
+            let input_tokens = parse_rsc_i64(obj, "inputTokens").unwrap_or(0);
+            let output_tokens = parse_rsc_i64(obj, "outputTokens").unwrap_or(0);
+            let reasoning_tokens = parse_rsc_i64(obj, "reasoningTokens").unwrap_or(0);
+            let cache_read_tokens = parse_rsc_i64(obj, "cacheReadTokens").unwrap_or(0);
+            let cost = parse_rsc_f64(obj, "cost").unwrap_or(0.0);
+            let key_id = parse_rsc_str(obj, "keyID");
+            let session_id = parse_rsc_str(obj, "sessionID");
+
+            items.push(UsageHistoryItem {
+                id,
+                time_created,
+                model,
+                provider,
+                input_tokens,
+                output_tokens,
+                reasoning_tokens,
+                cache_read_tokens,
+                cost,
+                key_id,
+                session_id,
+            });
+
+            pos = brace_end + 1;
+        } else {
+            break;
+        }
+    }
+
+    Ok(items)
+}
+
+/// 从 RSC 对象中提取字符串字段(field:"value")。
+fn parse_rsc_str<'a>(obj: &'a str, field: &str) -> Option<String> {
+    let pattern = format!(r#"{}:"([^"]*)""#, regex::escape(field));
+    let re = Regex::new(&pattern).ok()?;
+    re.captures(obj)?.get(1).map(|m| m.as_str().to_string())
+}
+
+/// 从 RSC 对象中提取整数 field。
+fn parse_rsc_i64(obj: &str, field: &str) -> Option<i64> {
+    let pattern = format!(r"{}:(-?\d+)", regex::escape(field));
+    let re = Regex::new(&pattern).ok()?;
+    re.captures(obj)?.get(1)?.as_str().parse().ok()
+}
+
+/// 从 RSC 对象中提取浮点数 field。
+fn parse_rsc_f64(obj: &str, field: &str) -> Option<f64> {
+    let pattern = format!(r"{}:(-?\d+(?:\.\d+)?)", regex::escape(field));
+    let re = Regex::new(&pattern).ok()?;
+    re.captures(obj)?.get(1)?.as_str().parse().ok()
+}
 /// 从 HTML 解析指定窗口(rollingUsage/weeklyUsage/monthlyUsage)的 usagePercent + resetInSec。
 fn parse_usage(html: &str, key: &str) -> Result<ApiWindow, CollectorError> {
     // 匹配 key:$R[N]={...},提取 {...}

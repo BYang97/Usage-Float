@@ -1,17 +1,28 @@
 import { useEffect, useState, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
 import { TokenUsage } from '../components/TokenUsage';
 import { getUsageData, subscribe } from '../services/usage-service';
-import type { TokenInfo } from '../types';
+import type { TokenInfo, UsageHistoryItem, Account } from '../types';
 import { t } from '../tokens';
 
 interface Props { onNavigate: (page: string) => void }
+
+function formatTime(ts: number): string {
+  if (!ts) return '—';
+  const d = new Date(ts * 1000);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export function History({ onNavigate }: Props) {
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [tokens, setTokens] = useState<TokenInfo | null>(null);
+  const [historyItems, setHistoryItems] = useState<UsageHistoryItem[]>([]);
+  const [historyLoadState, setHistoryLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [historyError, setHistoryError] = useState('');
 
   const loadData = useCallback(async () => {
     try {
@@ -26,9 +37,32 @@ export function History({ onNavigate }: Props) {
     }
   }, []);
 
+  const loadHistory = useCallback(async () => {
+    try {
+      setHistoryLoadState('loading');
+      setHistoryError('');
+      const accounts = await invoke<Account[]>('list_accounts');
+      if (accounts.length === 0) {
+        setHistoryItems([]);
+        setHistoryLoadState('loaded');
+        return;
+      }
+      const items = await invoke<UsageHistoryItem[]>('get_usage_history', {
+        accountId: accounts[0].id,
+        cursor: 0,
+      });
+      setHistoryItems(items);
+      setHistoryLoadState('loaded');
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : '加载用量历史失败');
+      setHistoryLoadState('error');
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     loadData();
+    loadHistory();
     const unsub = subscribe((data) => {
       if (cancelled) return;
       setTokens(data.tokens);
@@ -36,7 +70,7 @@ export function History({ onNavigate }: Props) {
       setLoadState('loaded');
     });
     return () => { cancelled = true; unsub(); };
-  }, [loadData]);
+  }, [loadData, loadHistory]);
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
@@ -71,6 +105,67 @@ export function History({ onNavigate }: Props) {
         {loadState === 'loaded' && tokens && (
           <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
             <TokenUsage data={tokens.tokenHistory} today={tokens.tokenToday} week={tokens.token7d} month={tokens.token30d} />
+
+            {/* ── 用量历史明细 ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary }}>用量历史</div>
+
+              {historyLoadState === 'loading' && (
+                <span style={{ fontSize: 12, color: t.textTertiary }}>加载中…</span>
+              )}
+              {historyLoadState === 'error' && (
+                <span style={{ fontSize: 12, color: t.textTertiary }}>{historyError || '加载失败'}</span>
+              )}
+              {historyLoadState === 'loaded' && historyItems.length === 0 && (
+                <span style={{ fontSize: 12, color: t.textTertiary }}>暂无用量历史</span>
+              )}
+              {historyLoadState === 'loaded' && historyItems.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ color: t.textTertiary, borderBottom: `1px solid ${t.surfaceBorder}` }}>
+                        <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 500 }}>时间</th>
+                        <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 500 }}>模型</th>
+                        <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 500 }}>Provider</th>
+                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Input</th>
+                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Output</th>
+                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Reasoning</th>
+                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Cache</th>
+                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>费用</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historyItems.map((item) => (
+                        <tr key={item.id} style={{ borderBottom: `1px solid ${t.surfaceBorder}`, color: t.textPrimary }}>
+                          <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: t.textTertiary }}>
+                            {formatTime(item.time_created)}
+                          </td>
+                          <td style={{ padding: '6px 8px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.model}
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>{item.provider}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                            {item.input_tokens.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                            {item.output_tokens.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                            {item.reasoning_tokens > 0 ? item.reasoning_tokens.toLocaleString() : '—'}
+                          </td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                            {item.cache_read_tokens > 0 ? item.cache_read_tokens.toLocaleString() : '—'}
+                          </td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                            {item.cost.toFixed(6)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

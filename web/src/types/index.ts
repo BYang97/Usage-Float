@@ -75,3 +75,17 @@ export interface AccountWithUsage {
   account: Account;
   usage: UsageResult | null;
 }
+
+export interface UsageHistoryItem {
+  id: string;
+  time_created: number;
+  model: string;
+  provider: string;
+  input_tokens: number;
+  output_tokens: number;
+  reasoning_tokens: number;
+  cache_read_tokens: number;
+  cost: number;
+  key_id: string | null;
+  session_id: string | null;
+}

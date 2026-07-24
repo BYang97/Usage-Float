@@ -4,7 +4,7 @@ mod mock;
 mod models;
 pub mod proxy;
 
-use collector::model::{ApiAccount, ApiQuota, ApiWindow};
+use collector::model::{ApiAccount, ApiQuota, ApiWindow, UsageHistoryItem};
 use models::UsageData;
 use database::{Account, AccountForm};
 use tauri::Manager;
@@ -445,6 +445,27 @@ async fn refresh_all(app_handle: tauri::AppHandle) -> Result<Vec<AccountWithUsag
 }
 
 // ============================================================
+// 用量历史命令 - /_server RPC 获取 usg_xxx 记录
+// ============================================================
+
+/// 获取指定账号的用量历史(usg_xxx 记录)。
+#[tauri::command]
+async fn get_usage_history(app_handle: tauri::AppHandle, account_id: String, cursor: i64) -> Result<Vec<UsageHistoryItem>, String> {
+    let app_data_dir = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
+    let account = database::get_account(&conn, &account_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("账号 {} 不存在", account_id))?;
+
+    let client = collector::api::OpenCodeApiClient::new(account.auth_cookie, account.workspace_id);
+    let items = client.fetch_usage_history(cursor).await
+        .map_err(|e| format!("用量历史查询失败: {}", e))?;
+
+    Ok(items)
+}
+
+// ============================================================
 // Tauri 应用入口
 // ============================================================
 
@@ -521,6 +542,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_usage_data,
+            get_usage_history,
             get_opencode_cookie,
             set_opencode_cookie,
             get_opencode_workspace_id,

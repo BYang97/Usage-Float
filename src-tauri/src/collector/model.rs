@@ -73,3 +73,21 @@ pub struct ApiAccount {
     pub status: Option<String>,
     pub expire_date: Option<String>,
 }
+
+// ===== opencode.ai /_server RPC 用量历史(从 React Flight 数据解析) =====
+
+/// 单条用量历史记录(从 usg_xxx 记录解析)。
+#[derive(Debug, Clone, Serialize)]
+pub struct UsageHistoryItem {
+    pub id: String,
+    pub time_created: i64,
+    pub model: String,
+    pub provider: String,
+    pub input_tokens: i64,
+    pub output_tokens: i64,
+    pub reasoning_tokens: i64,
+    pub cache_read_tokens: i64,
+    pub cost: f64,
+    pub key_id: Option<String>,
+    pub session_id: Option<String>,
+}
