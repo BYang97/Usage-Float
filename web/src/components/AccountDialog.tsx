@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { t } from '../tokens';
 import type { Account, AccountForm } from '../types';
+import { createLogger } from '../services/logger';
+
+const log = createLogger('AccountDialog');
 
 interface Props {
   open: boolean;
@@ -43,9 +46,11 @@ export function AccountDialog({ open, account, onClose, onSaved }: Props) {
       } else {
         await invoke('create_account', { form });
       }
+      log.info(account ? `update_account: ${account.id}` : 'create_account');
       onSaved();
       onClose();
     } catch (e: unknown) {
+      log.error('保存账号失败:', e);
       setError(typeof e === 'string' ? e : (e as Error)?.message || '保存失败');
     } finally {
       setSaving(false);

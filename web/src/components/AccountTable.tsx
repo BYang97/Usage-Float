@@ -4,6 +4,9 @@ import { t } from '../tokens';
 import { AccountDialog } from './AccountDialog';
 import { QuotaCard } from './QuotaCard';
 import type { Account, UsageResult, AccountWithUsage } from '../types';
+import { createLogger } from '../services/logger';
+
+const log = createLogger('AccountTable');
 
 export function AccountTable() {
   const [items, setItems] = useState<AccountWithUsage[]>([]);
@@ -23,7 +26,7 @@ export function AccountTable() {
         refreshOneUsage(a.id);
       }
     } catch (err) {
-      console.error('[AccountTable] list_accounts failed:', err);
+      log.error('list_accounts failed:', err);
     } finally {
       setLoading(false);
     }
@@ -39,7 +42,7 @@ export function AccountTable() {
         i.account.id === accountId ? { ...i, usage } : i
       ));
     } catch (err) {
-      console.error(`[AccountTable] refresh_one ${accountId} failed:`, err);
+      log.error(`refresh_one ${accountId} failed:`, err);
     } finally {
       setRefreshing(prev => {
         const next = new Set(prev);
@@ -55,7 +58,7 @@ export function AccountTable() {
       await invoke('delete_account', { id });
       setItems(prev => prev.filter(i => i.account.id !== id));
     } catch (err) {
-      console.error('[AccountTable] delete_account failed:', err);
+      log.error('delete_account failed:', err);
     }
   };
 

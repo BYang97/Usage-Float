@@ -1,5 +1,7 @@
-import { invoke } from '@tauri-apps/api/core';
+import { createLogger } from '../services/logger';
 import type { UsageProvider, UsageData, AccountInfo, QuotaInfo, TokenInfo, ModelUsageData } from '../types';
+
+const log = createLogger('TauriProvider');
 
 /**
  * TauriProvider - 通过 Tauri invoke 调用 Rust command 获取数据
@@ -16,7 +18,7 @@ export class TauriProvider implements UsageProvider {
     try {
       return await invoke<UsageData>('get_usage_data');
     } catch (err) {
-      console.error('[TauriProvider] get_usage_data 失败，使用降级数据:', err);
+      log.error('get_usage_data 失败，使用降级数据:', err);
       return {
         account: this.getFallbackAccount(),
         quota: this.getFallbackQuota(),
