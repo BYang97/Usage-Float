@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { History } from './pages/History';
+import { Models } from './pages/Models';
 import { Dashboard } from './pages/Dashboard';
 import { Settings } from './pages/Settings';
 import { startAutoRefresh, stopAutoRefresh } from './services/usage-service';
@@ -44,7 +46,8 @@ export default function App() {
         />
       )}
       {page === 'settings' && <Settings onNavigate={p => setPage(p)} />}
-      {(page === 'history' || page === 'models') && <Dashboard onNavigate={p => setPage(p)} />}
+      {page === 'history' && <History onNavigate={p => setPage(p)} />}
+      {page === 'models' && <Models onNavigate={p => setPage(p)} />}
 
       {/* 悬浮窗为独立 OS 窗口(label=float, tauri.conf.json 配置无边框+透明+置顶+skipTaskbar),
           不再在主窗口内叠加;由 tray 或 showFloatWindow 控制 show/hide */}
