@@ -9,6 +9,7 @@ use models::UsageData;
 use database::{Account, AccountForm};
 use tauri::Manager;
 use serde::Serialize;
+use log::{info, debug};
 
 // ============================================================
 // 用量数据命令 - 组合本地 collector + opencode.ai Go 页面(批次 2 重构)+ mock 兜底
@@ -65,6 +66,7 @@ fn resolve_local_data() -> Option<collector::model::LocalAggregate> {
 async fn fetch_api_quota(
     app_handle: &tauri::AppHandle,
 ) -> Result<(ApiQuota, ApiAccount), String> {
+    debug!("fetch_api_quota: start");
     let app_data_dir = app_handle.path().app_data_dir()
         .map_err(|e| format!("获取 app 数据目录失败: {}", e))?;
     let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
@@ -89,6 +91,7 @@ async fn fetch_api_quota(
             status: None,
             expire_date: None,
         };
+        debug!("fetch_api_quota: cache hit, returning cached data");
         return Ok((quota, account));
     }
 
@@ -107,9 +110,11 @@ async fn fetch_api_quota(
         return Err("未设置 workspace_id".to_string());
     }
 
+    debug!("fetch_api_quota: cache miss, calling API");
     let client = collector::api::OpenCodeApiClient::new(cookie, workspace_id);
     let quota = client.fetch_quota().await
         .map_err(|e| format!("配额查询失败: {}", e))?;
+    info!("fetch_api_quota: API success, plan={:?}", quota.plan);
 
     // 3. 写入缓存
     let _ = database::set_quota_cache(
@@ -337,6 +342,7 @@ pub struct AccountWithUsage {
 /// 列出全部账号。
 #[tauri::command]
 async fn list_accounts(app_handle: tauri::AppHandle) -> Result<Vec<Account>, String> {
+    info!("list_accounts");
     let app_data_dir = app_handle.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
     let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
@@ -346,6 +352,7 @@ async fn list_accounts(app_handle: tauri::AppHandle) -> Result<Vec<Account>, Str
 /// 创建新账号。
 #[tauri::command]
 async fn create_account(app_handle: tauri::AppHandle, form: AccountForm) -> Result<Account, String> {
+    info!("create_account: name={:?}", form.name);
     let app_data_dir = app_handle.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
     let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
@@ -384,6 +391,7 @@ async fn delete_account(app_handle: tauri::AppHandle, id: String) -> Result<(), 
 /// 刷新单个账号的配额。按 account_id 取 cookie+workspace_id,调 opencode.ai API。
 #[tauri::command]
 async fn refresh_one(app_handle: tauri::AppHandle, account_id: String) -> Result<UsageResult, String> {
+    info!("refresh_one: account_id={}", account_id);
     let app_data_dir = app_handle.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
     let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
@@ -440,17 +448,14 @@ async fn refresh_all(app_handle: tauri::AppHandle) -> Result<Vec<AccountWithUsag
 // Tauri 应用入口
 // ============================================================
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
+            app.handle().plugin(
+                tauri_plugin_log::Builder::default()
+                    .level(log::LevelFilter::Debug)
+                    .build(),
+            )?;
 
             // 系统托盘:show/hide 主窗口 + 悬浮窗 + 退出
             let _tray = tauri::tray::TrayIconBuilder::with_id("main-tray")

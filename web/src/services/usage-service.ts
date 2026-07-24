@@ -2,6 +2,9 @@ import { isTauri } from '@tauri-apps/api/core';
 import type { UsageProvider, UsageData } from '../types';
 import { MockProvider } from '../providers/mock-provider';
 import { TauriProvider } from '../providers/tauri-provider';
+import { createLogger } from './logger';
+
+const log = createLogger('usage-service');
 
 // Tauri 运行时内走 Rust 命令;纯 web 预览回落 mock。
 let provider: UsageProvider = isTauri() ? new TauriProvider() : new MockProvider();
@@ -33,7 +36,7 @@ export function subscribe(cb: DataCallback): () => void {
 
 function notifyAll(data: UsageData) {
   listeners.forEach(cb => {
-    try { cb(data); } catch (e) { console.error('[usage-service] 通知回调异常:', e); }
+    try { cb(data); } catch (e) { log.error('通知回调异常:', e); }
   });
 }
 
@@ -69,7 +72,7 @@ export function startAutoRefresh(intervalMs: number) {
     try {
       await refreshAndNotify();
     } catch (err) {
-      console.error('[usage-service] 自动刷新失败:', err);
+      log.error('自动刷新失败:', err);
       // 静默失败，下次重试
     }
   }, intervalMs);
