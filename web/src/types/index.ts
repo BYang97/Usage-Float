@@ -78,7 +78,7 @@ export interface AccountWithUsage {
 
 export interface UsageHistoryItem {
   id: string;
-  time_created: number;
+  time_created: string;
   model: string;
   provider: string;
   input_tokens: number;

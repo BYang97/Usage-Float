@@ -80,7 +80,7 @@ pub struct ApiAccount {
 #[derive(Debug, Clone, Serialize)]
 pub struct UsageHistoryItem {
     pub id: String,
-    pub time_created: i64,
+    pub time_created: String,
     pub model: String,
     pub provider: String,
     pub input_tokens: i64,

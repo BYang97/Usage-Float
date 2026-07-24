@@ -247,7 +247,7 @@ fn parse_usage_history_items(response: &str) -> Result<Vec<UsageHistoryItem>, Co
             let id = parse_rsc_str(obj, "id").ok_or_else(|| {
                 CollectorError::ParseFailed("usg 记录缺少 id".to_string())
             })?;
-            let time_created = parse_rsc_i64(obj, "timeCreated").ok_or_else(|| {
+            let time_created = parse_rsc_date(obj, "timeCreated").ok_or_else(|| {
                 CollectorError::ParseFailed("usg 记录缺少 timeCreated".to_string())
             })?;
             let model = parse_rsc_str(obj, "model").unwrap_or_default();
@@ -286,6 +286,13 @@ fn parse_usage_history_items(response: &str) -> Result<Vec<UsageHistoryItem>, Co
 /// 从 RSC 对象中提取字符串字段(field:"value")。
 fn parse_rsc_str<'a>(obj: &'a str, field: &str) -> Option<String> {
     let pattern = format!(r#"{}:"([^"]*)""#, regex::escape(field));
+    let re = Regex::new(&pattern).ok()?;
+    re.captures(obj)?.get(1).map(|m| m.as_str().to_string())
+}
+
+/// 从 RSC 对象提取日期字段(field:$R[N]=new Date("...") 或 field:new Date("..."))。
+fn parse_rsc_date(obj: &str, field: &str) -> Option<String> {
+    let pattern = format!(r#"{}:(?:\$R\[\d+\]=)?new Date\("([^"]+)"\)"#, regex::escape(field));
     let re = Regex::new(&pattern).ok()?;
     re.captures(obj)?.get(1).map(|m| m.as_str().to_string())
 }
