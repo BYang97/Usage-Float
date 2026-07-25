@@ -23,6 +23,8 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
   const [historyItems, setHistoryItems] = useState<UsageHistoryItem[]>([]);
   const [historyLoadState, setHistoryLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [historyError, setHistoryError] = useState('');
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState('');
 
   const loadData = useCallback(async () => {
     try {
@@ -37,18 +39,26 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
     }
   }, []);
 
-  const loadHistory = useCallback(async () => {
+  const loadHistory = useCallback(async (accountId?: string) => {
     try {
       setHistoryLoadState('loading');
       setHistoryError('');
-      const accounts = await invoke<Account[]>('list_accounts');
-      if (accounts.length === 0) {
+      let accs = accounts;
+      if (accs.length === 0) {
+        accs = await invoke<Account[]>('list_accounts');
+        setAccounts(accs);
+      }
+      const accId = accountId ?? selectedAccountId ?? accs[0]?.id;
+      if (!accId) {
         setHistoryItems([]);
         setHistoryLoadState('loaded');
         return;
       }
+      if (accountId && accountId !== selectedAccountId) {
+        setSelectedAccountId(accountId);
+      }
       const items = await invoke<UsageHistoryItem[]>('get_usage_history', {
-        accountId: accounts[0].id,
+        accountId: accId,
         cursor: 0,
       });
       setHistoryItems(items);
@@ -57,7 +67,7 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
       setHistoryError(err instanceof Error ? err.message : '加载用量历史失败');
       setHistoryLoadState('error');
     }
-  }, []);
+  }, [accounts, selectedAccountId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,7 +128,18 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
 
             {/* ── 用量历史明细 ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary }}>用量历史</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary }}>用量历史</div>
+                {accounts.length > 0 && (
+                  <select
+                    value={selectedAccountId}
+                    onChange={e => loadHistory(e.target.value)}
+                    style={{ background: t.surface, color: t.textPrimary, border: `1px solid ${t.surfaceBorder}`, borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
+                  >
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name || a.workspace_id}</option>)}
+                  </select>
+                )}
+              </div>
 
               {historyLoadState === 'loading' && (
                 <span style={{ fontSize: 12, color: t.textTertiary }}>加载中…</span>

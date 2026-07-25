@@ -475,6 +475,7 @@ async fn refresh_all(app_handle: tauri::AppHandle) -> Result<Vec<AccountWithUsag
 /// 获取指定账号的用量历史(usg_xxx 记录)。
 #[tauri::command]
 async fn get_usage_history(app_handle: tauri::AppHandle, account_id: String, cursor: i64) -> Result<Vec<UsageHistoryItem>, String> {
+    info!("get_usage_history: account_id={}, cursor={}", account_id, cursor);
     let app_data_dir = app_handle.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
     let conn = database::open_db(&app_data_dir).map_err(|e| e.to_string())?;
