@@ -23,7 +23,7 @@ export function Sidebar({ active, onNavigate }: Props) {
           return (
             <button key={item.id} onClick={() => onNavigate(item.id)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
                 fontSize: 14, fontWeight: 500, width: '100%',
                 background: isActive ? t.surfaceHover : 'transparent',
                 color: isActive ? t.accentBlue : t.textSecondary,

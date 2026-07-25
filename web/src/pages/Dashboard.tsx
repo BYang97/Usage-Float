@@ -137,14 +137,14 @@ export function Dashboard({ onNavigate, onMinimize, onClose }: Props) {
       <Sidebar active="dashboard" onNavigate={onNavigate} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Header onSettings={() => onNavigate('settings')} onMinimize={onMinimize} onClose={onClose} />
-        <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <PlanCard plan={account.plan} status={account.status} expireDate={account.expireDate} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             <QuotaCard title="5小时额度" percentage={quota.fiveHourPercent} resetTime={quota.fiveHourReset} />
             <QuotaCard title="本周额度" percentage={quota.weeklyPercent} resetTime={quota.weeklyReset} />
             <QuotaCard title="本月额度" percentage={quota.monthlyPercent} />
           </div>
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <TokenUsage data={tokens.tokenHistory} today={tokens.tokenToday} week={tokens.token7d} month={tokens.token30d} />
             </div>
