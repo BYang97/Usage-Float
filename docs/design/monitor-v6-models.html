@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>模型统计 · Usage Float v6</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,sans-serif; }
+body { background:#f8f9fa; padding:24px; display:flex; justify-content:center; }
+.panel { width:600px; }
+.header { display:flex; align-items:baseline; gap:12px; margin-bottom:20px; }
+.header h1 { font-size:20px; font-weight:700; color:#1a1d21; }
+.header .sub { font-size:11px; color:#9ca3af; }
+.card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02); transition:all .2s; }
+.card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.06); transform:translateY(-1px); }
+.section-title { font-size:13px; font-weight:600; color:#6b7280; margin:16px 0 8px; }
+.model-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.model-row:last-child { margin-bottom:0; }
+.model-name { font-size:11px; color:#1a1d21; width:140px; }
+.bar-bg { flex:1; height:6px; background:#e9ecef; border-radius:3px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:3px; }
+.model-pct { font-size:11px; font-weight:600; color:#6b7280; width:40px; text-align:right; }
+.model-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.model-grid .mc { background:#fff; border-radius:12px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02); transition:all .2s; }
+.model-grid .mc:hover { box-shadow:0 4px 12px rgba(0,0,0,0.06); transform:translateY(-1px); }
+.mc-name { font-size:14px; font-weight:600; color:#1a1d21; margin-bottom:6px; }
+.mc-calls { font-size:20px; font-weight:700; color:#1a1d21; margin-bottom:2px; }
+.mc-tokens { font-size:11px; color:#9ca3af; margin-bottom:2px; }
+.mc-fee { font-size:11px; color:#6366f1; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="header"><h1>模型统计</h1><span class="sub">近30天 · 模型分布</span></div>
+
+  <div class="section-title">模型使用</div>
+  <div class="card">
+    <div class="model-row">
+      <span class="model-name">deepseek-v4-flash</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:32.8%;background:#6366f1"></div></div>
+      <span class="model-pct">32.8%</span>
+    </div>
+    <div class="model-row">
+      <span class="model-name">未知</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:66.7%;background:#f59e0b"></div></div>
+      <span class="model-pct">66.7%</span>
+    </div>
+    <div class="model-row">
+      <span class="model-name">gpt-5.5</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:0.4%;background:#10b981;min-width:4px"></div></div>
+      <span class="model-pct">0.4%</span>
+    </div>
+  </div>
+
+  <div class="section-title">模型卡片</div>
+  <div class="model-grid">
+    <div class="mc">
+      <div class="mc-name">deepseek-v4-flash</div>
+      <div class="mc-calls">1,234</div>
+      <div class="mc-tokens">89.2M tokens</div>
+      <div class="mc-fee">$12.34</div>
+    </div>
+    <div class="mc">
+      <div class="mc-name">gpt-5.5</div>
+      <div class="mc-calls">456</div>
+      <div class="mc-tokens">12.3M tokens</div>
+      <div class="mc-fee">$45.67</div>
+    </div>
+    <div class="mc">
+      <div class="mc-name">未知</div>
+      <div class="mc-calls">2,567</div>
+      <div class="mc-tokens">156.7M tokens</div>
+      <div class="mc-fee">$8.90</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>使用记录 · Usage Float v6</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,sans-serif; }
+body { background:#f8f9fa; padding:24px; display:flex; justify-content:center; }
+.panel { width:600px; }
+.header { display:flex; align-items:baseline; gap:12px; margin-bottom:20px; }
+.header h1 { font-size:20px; font-weight:700; color:#1a1d21; }
+.header .sub { font-size:11px; color:#9ca3af; }
+.card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02); transition:all .2s; }
+.card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.06); transform:translateY(-1px); }
+.section-title { font-size:13px; font-weight:600; color:#6b7280; margin:16px 0 8px; }
+.token-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.token .label { font-size:10px; color:#9ca3af; display:block; margin-bottom:2px; }
+.token .val { font-size:20px; font-weight:700; color:#1a1d21; }
+.token.accent .val { color:#6366f1; }
+.table-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.table-header .title { font-size:13px; font-weight:600; color:#1a1d21; }
+.table-header select { background:#fff; border:1px solid #e9ecef; border-radius:4px; padding:4px 8px; font-size:12px; color:#1a1d21; cursor:pointer; outline:none; }
+.table-header select:focus { border-color:#6366f1; }
+table { width:100%; border-collapse:collapse; }
+th { font-size:11px; font-weight:500; color:#9ca3af; padding:8px 6px; text-align:left; border-bottom:1px solid #e9ecef; white-space:nowrap; }
+td { font-size:13px; color:#1a1d21; padding:8px 6px; border-bottom:1px solid #f1f3f5; }
+tr:hover td { background:#f8f9fa; }
+th.num, td.num { text-align:right; }
+td.num { font-variant-numeric:tabular-nums; }
+td.time { color:#9ca3af; white-space:nowrap; }
+.load-more { display:flex; justify-content:center; padding:12px 0 4px; }
+.load-more button { background:#fff; border:1px solid #e9ecef; border-radius:6px; padding:6px 20px; font-size:12px; color:#6b7280; cursor:pointer; transition:all .15s; }
+.load-more button:hover { border-color:#6366f1; color:#6366f1; background:#f5f3ff; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="header"><h1>使用记录</h1><span class="sub">3 个账号 · 用量明细</span></div>
+
+  <div class="section-title">Token 消耗汇总</div>
+  <div class="card"><div class="token-grid">
+    <div class="token"><span class="label">今日</span><span class="val">65.7M</span></div>
+    <div class="token accent"><span class="label">近7天</span><span class="val">104.9M</span></div>
+    <div class="token"><span class="label">近30天</span><span class="val">496.2M</span></div>
+  </div></div>
+
+  <div class="section-title">用量历史</div>
+  <div class="card">
+    <div class="table-header">
+      <span class="title">用量历史</span>
+      <select>
+        <option>默认</option>
+        <option>测试账号</option>
+        <option>团队号</option>
+      </select>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>模型</th>
+          <th>Provider</th>
+          <th class="num">Input</th>
+          <th class="num">Output</th>
+          <th class="num">Reasoning</th>
+          <th class="num">Cache</th>
+          <th class="num">费用</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="time">2026-07-25 14:32</td>
+          <td>deepseek-v4-flash</td>
+          <td>qoderclicn</td>
+          <td class="num">1,234</td>
+          <td class="num">5,678</td>
+          <td class="num">890</td>
+          <td class="num">123</td>
+          <td class="num">$0.0123</td>
+        </tr>
+        <tr>
+          <td class="time">2026-07-25 13:15</td>
+          <td>gpt-5.5</td>
+          <td>openai</td>
+          <td class="num">456</td>
+          <td class="num">1,234</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">$0.0456</td>
+        </tr>
+        <tr>
+          <td class="time">2026-07-25 11:40</td>
+          <td>未知</td>
+          <td>unknown</td>
+          <td class="num">789</td>
+          <td class="num">2,345</td>
+          <td class="num">—</td>
+          <td class="num">56</td>
+          <td class="num">$0.0089</td>
+        </tr>
+        <tr>
+          <td class="time">2026-07-24 22:10</td>
+          <td>deepseek-v4-flash</td>
+          <td>qoderclicn</td>
+          <td class="num">2,345</td>
+          <td class="num">8,901</td>
+          <td class="num">1,234</td>
+          <td class="num">456</td>
+          <td class="num">$0.0234</td>
+        </tr>
+        <tr>
+          <td class="time">2026-07-24 18:55</td>
+          <td>gpt-5.5</td>
+          <td>openai</td>
+          <td class="num">678</td>
+          <td class="num">3,456</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">$0.0789</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="load-more"><button>加载更多</button></div>
+  </div>
+</div>
+</body>
+</html>
