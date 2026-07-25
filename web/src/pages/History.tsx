@@ -226,7 +226,6 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
                     </button>
                   </div>
                 )}
-              )}
             </div>
           </div>
         )}
