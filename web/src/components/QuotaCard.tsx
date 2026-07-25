@@ -13,3 +13,4 @@ export function QuotaCard({ title, percentage, resetTime }: Props) {
       {resetTime && <span style={{ fontSize: 12, color: t.textTertiary }}>重置：{resetTime}</span>}
     </div>
   );
+}
