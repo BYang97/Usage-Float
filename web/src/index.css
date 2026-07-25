@@ -6,24 +6,25 @@
  * 修改 token 只动这里,无需 tailwind.config.ts。
  * ============================================================ */
 @theme {
-  /* 1.1 色彩系统 */
-  --color-surface: #1a1b1e;        /* 主背景 */
-  --color-surface-alt: #222327;    /* 卡片背景 */
-  --color-surface-hover: #2c2e33;  /* hover 态 */
-  --color-surface-border: #2f3036; /* 边框 */
+  /* 1.1 色彩系统(OpenPencil 设计稿) */
+  --color-surface: #1a1c1e;        /* 主背景 */
+  --color-surface-alt: #2e3033;    /* 卡片背景(亮,设计稿 surfaceAlt) */
+  --color-surface-hover: #34363a;  /* hover 态 */
+  --color-surface-border: #3f4247; /* 边框(清晰,设计稿 border) */
+  --color-card: #282b2d;           /* 卡片(设计稿 card) */
 
-  --color-text-primary: #e4e5e7;
-  --color-text-secondary: #8b8d97;
-  --color-text-tertiary: #5c5e66;
+  --color-text-primary: #f2f4f9;   /* 主文本(亮,设计稿 text) */
+  --color-text-secondary: #9ea3ad; /* 次文本(设计稿 textSec) */
+  --color-text-tertiary: #72757f;  /* 弱文本(设计稿 textTer) */
   --color-text-inverse: #0d0d0f;
 
-  --color-accent-blue: #4a9eff;
-  --color-accent-green: #34d399;
+  --color-accent-blue: #599eff;    /* 设计稿 accent */
+  --color-accent-green: #4cd18c;   /* 设计稿 success */
   --color-accent-cyan: #22d3ee;
 
-  --color-status-ok: #34d399;      /* 正常  > 50% */
-  --color-status-warning: #fbbf24; /* 警告  20–50% */
-  --color-status-danger: #ef4444;  /* 危险  < 20% */
+  --color-status-ok: #4cd18c;      /* 正常(设计稿 success) */
+  --color-status-warning: #f2c14f; /* 警告(设计稿 warning) */
+  --color-status-danger: #ea6060;  /* 危险(设计稿 danger) */
 
   /* 1.4 圆角 */
   --radius-sm: 4px;
