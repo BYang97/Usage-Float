@@ -21,11 +21,13 @@ export function Header({ title = 'OpenCode Go', onSettings, onMinimize, onClose 
       paddingLeft: 16, paddingRight: 16,
       flexShrink: 0, background: t.surface,
     }}>
-      <span style={{ fontSize: t.fsH2, fontWeight: 600, color: t.textPrimary }}>
-        {title}
-      </span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button style={btn} onClick={onSettings}>&#9881;</button>
+        <span style={{ fontSize: t.fsH2, fontWeight: 600, color: t.textPrimary }}>
+          {title}
+        </span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <button style={btn} onClick={onMinimize}>&#9472;</button>
         <button style={btn} onClick={onClose}>&#10005;</button>
       </div>

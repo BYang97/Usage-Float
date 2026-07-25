@@ -12,15 +12,8 @@ export function Settings({ onNavigate }: Props) {
   return (
     <PageLayout active="settings" title="设置" onNavigate={onNavigate}>
       <div className="card" style={{
-        width: 480, overflow: 'hidden', maxHeight: '90vh', overflowY: 'auto', alignSelf: 'center',
+        width: 480, alignSelf: 'center',
       }}>
-        {/* Title */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 16, paddingTop: 14, paddingBottom: 14 }}>
-          <span style={{ fontSize: t.fsH2, fontWeight: 600, color: t.textPrimary }}>设置</span>
-          <button onClick={() => onNavigate('dashboard')} style={{ background: 'transparent', border: 'none', color: t.textTertiary, cursor: 'pointer', fontSize: 14 }}>&#10005;</button>
-        </div>
-        <div style={{ height: 1, background: t.surfaceBorder }} />
-
         {/* General */}
         <Section title="通用设置">
           <Row label="开机自动启动">

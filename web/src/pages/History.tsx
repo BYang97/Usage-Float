@@ -126,9 +126,12 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
 
       {loadState === 'loaded' && tokens && (
         <>
+          {/* ── Token 消耗 ── */}
+          <span style={{ fontSize: t.fsH2, fontWeight: 600, color: t.textPrimary }}>Token 消耗</span>
           <TokenUsage data={tokens.tokenHistory} today={tokens.tokenToday} week={tokens.token7d} month={tokens.token30d} />
 
-          {/* ── 用量历史明细 ── */}
+          {/* ── 使用明细 ── */}
+          <span style={{ fontSize: t.fsH2, fontWeight: 600, color: t.textPrimary }}>使用明细</span>
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <span style={{ fontSize: t.fsH3, fontWeight: 600, color: t.textPrimary }}>用量历史</span>

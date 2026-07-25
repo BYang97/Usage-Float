@@ -121,18 +121,20 @@ export function Dashboard({ onNavigate, onMinimize, onClose }: Props) {
 
   // ─── 正常展示 — Bento Grid ────────────────────────────────────
   return (
-    <PageLayout active="dashboard" title="仪表盘" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
+    <PageLayout active="dashboard" title={account.plan || '仪表盘'} onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
       {/* 订阅计划卡 */}
       <PlanCard plan={account.plan} status={account.status} expireDate={account.expireDate} />
 
-      {/* Bento Grid: 本月额度(大) + 5小时/本周(小) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-        {/* 本月额度 — 大卡，跨两行 */}
-        <QuotaCard title="本月额度" percentage={quota.monthlyPercent} />
+      {/* Bento Grid: 5小时(大) + 本周/本月(小) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
+        {/* 左侧：本周 + 本月（小卡，上下排列） */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <QuotaCard title="本周额度" percentage={quota.weeklyPercent} resetTime={quota.weeklyReset} />
+          <QuotaCard title="本月额度" percentage={quota.monthlyPercent} />
+        </div>
 
-        {/* 右侧：5小时 + 本周 */}
+        {/* 右侧：5小时额度 — 大卡，跨两行 */}
         <QuotaCard title="5小时额度" percentage={quota.fiveHourPercent} resetTime={quota.fiveHourReset} />
-        <QuotaCard title="本周额度" percentage={quota.weeklyPercent} resetTime={quota.weeklyReset} />
       </div>
 
       {/* Token 卡 + 图表卡并排 */}

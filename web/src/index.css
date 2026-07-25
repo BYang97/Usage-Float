@@ -44,6 +44,19 @@
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.5);
   --glass-blur: 20px;
+
+  /* 字体大小层级 */
+  --fs-h1: 28px;
+  --fs-h2: 18px;
+  --fs-h3: 15px;
+  --fs-body: 14px;
+  --fs-secondary: 13px;
+  --fs-weak: 12px;
+  --fs-hero: 28px;
+
+  /* 内容区间距 */
+  --spacing-content-padding: 16px;
+  --spacing-content-gap: 12px;
 }
 
 /* ============================================================
