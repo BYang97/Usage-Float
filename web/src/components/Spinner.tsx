@@ -17,7 +17,7 @@ export function Spinner({ label = '加载中…' }: Props) {
         borderRadius: '50%',
         animation: 'spin 0.8s linear infinite',
       }} />
-      <span style={{ fontSize: 13, color: t.textTertiary }}>{label}</span>
+      <span style={{ fontSize: t.fsBody, color: t.textTertiary }}>{label}</span>
     </div>
   );
 }

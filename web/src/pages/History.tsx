@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Sidebar } from '../components/Sidebar';
-import { Header } from '../components/Header';
+import { PageLayout } from '../components/PageLayout';
 import { TokenUsage } from '../components/TokenUsage';
 import { getUsageData, subscribe } from '../services/usage-service';
 import type { TokenInfo, UsageHistoryItem, Account } from '../types';
@@ -96,140 +95,116 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
   }, [loadData, loadHistory]);
 
   return (
-    <div style={{ display: 'flex', height: '100%' }}>
-      <Sidebar active="history" onNavigate={onNavigate} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header onSettings={() => onNavigate('settings')} onMinimize={onMinimize} onClose={onClose} />
+    <PageLayout active="history" title="使用记录" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
 
-        {loadState === 'loading' && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Spinner />
-          </div>
-        )}
+      {loadState === 'loading' && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Spinner />
+        </div>
+      )}
 
-        {loadState === 'error' && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 40 }}>
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: t.surfaceHover, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>&#9888;</div>
-            <span style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary }}>数据加载失败</span>
-            <span style={{ fontSize: 12, color: t.textTertiary, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
-              {errorMsg || '无法获取使用记录数据'}
-            </span>
-            <button
-              onClick={() => loadData()}
-              style={{
-                marginTop: 4, padding: '8px 20px', borderRadius: 6,
-                border: 'none', background: t.accentBlue, color: '#fff',
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              }}
-            >
-              重试
-            </button>
-          </div>
-        )}
+      {loadState === 'error' && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 40 }}>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: t.surfaceHover, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>&#9888;</div>
+          <span style={{ fontSize: t.fsH2, fontWeight: 600, color: t.textPrimary }}>数据加载失败</span>
+          <span style={{ fontSize: t.fsSecondary, color: t.textTertiary, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
+            {errorMsg || '无法获取使用记录数据'}
+          </span>
+          <button onClick={() => loadData()}
+            style={{ marginTop: 4, padding: '8px 20px', borderRadius: 6, border: 'none', background: t.accentBlue, color: '#fff', fontSize: t.fsBody, fontWeight: 500, cursor: 'pointer' }}>
+            重试
+          </button>
+        </div>
+      )}
 
-        {loadState === 'loaded' && !tokens && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-            <span style={{ fontSize: 13, color: t.textTertiary }}>暂无使用记录</span>
-          </div>
-        )}
+      {loadState === 'loaded' && !tokens && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+          <span style={{ fontSize: t.fsBody, color: t.textTertiary }}>暂无使用记录</span>
+        </div>
+      )}
 
-        {loadState === 'loaded' && tokens && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <TokenUsage data={tokens.tokenHistory} today={tokens.tokenToday} week={tokens.token7d} month={tokens.token30d} />
+      {loadState === 'loaded' && tokens && (
+        <>
+          <TokenUsage data={tokens.tokenHistory} today={tokens.tokenToday} week={tokens.token7d} month={tokens.token30d} />
 
-            {/* ── 用量历史明细 ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary }}>用量历史</div>
-                {accounts.length > 0 && (
-                  <select
-                    value={selectedAccountId}
-                    onChange={e => loadHistory(e.target.value)}
-                    style={{ background: t.surface, color: t.textPrimary, border: `1px solid ${t.surfaceBorder}`, borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
-                  >
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name || a.workspace_id}</option>)}
-                  </select>
-                )}
-              </div>
-
-              {historyLoadState === 'loading' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-                  <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.08)', borderTopColor: t.accentBlue, borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: t.textTertiary }}>加载中…</span>
-                </div>
+          {/* ── 用量历史明细 ── */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <span style={{ fontSize: t.fsH3, fontWeight: 600, color: t.textPrimary }}>用量历史</span>
+              {accounts.length > 0 && (
+                <select
+                  value={selectedAccountId}
+                  onChange={e => loadHistory(e.target.value)}
+                  style={{ background: t.surface, color: t.textPrimary, border: `1px solid ${t.surfaceBorder}`, borderRadius: 4, padding: '4px 8px', fontSize: t.fsSecondary }}
+                >
+                  {accounts.map(a => <option key={a.id} value={a.id}>{a.name || a.workspace_id}</option>)}
+                </select>
               )}
-              {historyLoadState === 'error' && (
-                <span style={{ fontSize: 12, color: t.textTertiary }}>{historyError || '加载失败'}</span>
-              )}
-              {historyLoadState === 'loaded' && historyItems.length === 0 && (
-                <span style={{ fontSize: 12, color: t.textTertiary }}>暂无用量历史</span>
-              )}
-              {historyLoadState === 'loaded' && historyItems.length > 0 && (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ color: t.textTertiary, borderBottom: `1px solid ${t.surfaceBorder}` }}>
-                        <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 500 }}>时间</th>
-                        <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 500 }}>模型</th>
-                        <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 500 }}>Provider</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Input</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Output</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Reasoning</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Cache</th>
-                        <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>费用</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historyItems.map((item) => (
-                        <tr key={item.id} style={{ borderBottom: `1px solid ${t.surfaceBorder}`, color: t.textPrimary }}>
-                          <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: t.textTertiary }}>
-                            {formatTime(item.time_created)}
-                          </td>
-                          <td style={{ padding: '6px 8px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {item.model}
-                          </td>
-                          <td style={{ padding: '6px 8px' }}>{item.provider}</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                            {item.input_tokens.toLocaleString()}
-                          </td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                            {item.output_tokens.toLocaleString()}
-                          </td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                            {item.reasoning_tokens > 0 ? item.reasoning_tokens.toLocaleString() : '—'}
-                          </td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                            {item.cache_read_tokens > 0 ? item.cache_read_tokens.toLocaleString() : '—'}
-                          </td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                            {item.cost.toFixed(4)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                )}
-                {hasMore && (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
-                    <button
-                      onClick={() => loadHistory(undefined, true)}
-                      disabled={historyLoadState === 'loading'}
-                      style={{
-                        padding: '6px 20px', borderRadius: 6,
-                        border: `1px solid ${t.surfaceBorder}`, background: t.surface,
-                        color: t.textPrimary, fontSize: 12, cursor: 'pointer',
-                        opacity: historyLoadState === 'loading' ? 0.5 : 1,
-                      }}
-                    >
-                      {historyLoadState === 'loading' ? '加载中…' : '加载更多'}
-                    </button>
-                  </div>
-                )}
             </div>
+
+            {historyLoadState === 'loading' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.08)', borderTopColor: t.accentBlue, borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                <span style={{ fontSize: t.fsSecondary, color: t.textTertiary }}>加载中…</span>
+              </div>
+            )}
+            {historyLoadState === 'error' && (
+              <span style={{ fontSize: t.fsSecondary, color: t.textTertiary }}>{historyError || '加载失败'}</span>
+            )}
+            {historyLoadState === 'loaded' && historyItems.length === 0 && (
+              <span style={{ fontSize: t.fsSecondary, color: t.textTertiary }}>暂无用量历史</span>
+            )}
+            {historyLoadState === 'loaded' && historyItems.length > 0 && (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: t.fsSecondary }}>
+                  <thead>
+                    <tr style={{ color: t.textTertiary, borderBottom: `1px solid ${t.surfaceBorder}` }}>
+                      <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 500 }}>时间</th>
+                      <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 500 }}>模型</th>
+                      <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 500 }}>Provider</th>
+                      <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Input</th>
+                      <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Output</th>
+                      <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Reasoning</th>
+                      <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>Cache</th>
+                      <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 500 }}>费用</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyItems.map((item) => (
+                      <tr key={item.id} style={{ borderBottom: `1px solid ${t.surfaceBorder}`, color: t.textPrimary }}>
+                        <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: t.textTertiary }}>{formatTime(item.time_created)}</td>
+                        <td style={{ padding: '6px 8px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.model}</td>
+                        <td style={{ padding: '6px 8px' }}>{item.provider}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{item.input_tokens.toLocaleString()}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{item.output_tokens.toLocaleString()}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{item.reasoning_tokens > 0 ? item.reasoning_tokens.toLocaleString() : '—'}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{item.cache_read_tokens > 0 ? item.cache_read_tokens.toLocaleString() : '—'}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{item.cost.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {hasMore && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+                <button
+                  onClick={() => loadHistory(undefined, true)}
+                  disabled={historyLoadState === 'loading'}
+                  style={{
+                    padding: '6px 20px', borderRadius: 6,
+                    border: `1px solid ${t.surfaceBorder}`, background: t.surface,
+                    color: t.textPrimary, fontSize: t.fsSecondary, cursor: 'pointer',
+                    opacity: historyLoadState === 'loading' ? 0.5 : 1,
+                  }}
+                >
+                  {historyLoadState === 'loading' ? '加载中…' : '加载更多'}
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
+        </>
+      )}
+    </PageLayout>
   );
 }

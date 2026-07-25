@@ -17,4 +17,12 @@ export const t = {
   statusWarning: 'var(--color-status-warning)',
   statusDanger: 'var(--color-status-danger)',
   glass: 'rgba(26, 27, 30, 0.72)',
+  // 字体大小
+  fsH1: 'var(--fs-h1)',
+  fsH2: 'var(--fs-h2)',
+  fsH3: 'var(--fs-h3)',
+  fsBody: 'var(--fs-body)',
+  fsSecondary: 'var(--fs-secondary)',
+  fsWeak: 'var(--fs-weak)',
+  fsHero: 'var(--fs-hero)',
 } as const;

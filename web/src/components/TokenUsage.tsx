@@ -5,8 +5,8 @@ interface Props { data: { date: string; tokens: number }[]; today: string; week:
 
 export function TokenUsage({ data, today, week, month }: Props) {
   return (
-    <div style={{ background: t.surfaceAlt, border: `1px solid ${t.surfaceBorder}`, borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <span style={{ fontSize: 14, fontWeight: 600, color: t.textPrimary }}>Token 消耗</span>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
+      <span style={{ fontSize: t.fsH3, fontWeight: 600, color: t.textPrimary }}>Token 消耗</span>
       <div style={{ display: 'flex', gap: 16 }}>
         {[
           { label: '今日消耗', value: today },
@@ -14,8 +14,8 @@ export function TokenUsage({ data, today, week, month }: Props) {
           { label: '近30天', value: month },
         ].map((s, i) => (
           <div key={s.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 11, color: t.textTertiary }}>{s.label}</span>
-            <span style={{ fontSize: 22, fontWeight: 700, color: i === 1 ? t.accentBlue : t.textPrimary }}>{s.value}</span>
+            <span style={{ fontSize: t.fsWeak, color: t.textTertiary }}>{s.label}</span>
+            <span style={{ fontSize: t.fsH1, fontWeight: 700, color: i === 1 ? t.accentBlue : t.textPrimary }}>{s.value}</span>
           </div>
         ))}
       </div>

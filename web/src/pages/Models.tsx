@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Sidebar } from '../components/Sidebar';
-import { Header } from '../components/Header';
+import { PageLayout } from '../components/PageLayout';
 import { ModelUsage } from '../components/ModelUsage';
 import { getUsageData, subscribe } from '../services/usage-service';
 import type { ModelUsageData } from '../types';
@@ -40,49 +39,37 @@ export function Models({ onNavigate, onMinimize, onClose }: Props) {
   }, [loadData]);
 
   return (
-    <div style={{ display: 'flex', height: '100%' }}>
-      <Sidebar active="models" onNavigate={onNavigate} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header onSettings={() => onNavigate('settings')} onMinimize={onMinimize} onClose={onClose} />
+    <PageLayout active="models" title="模型统计" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
 
-        {loadState === 'loading' && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Spinner />
-          </div>
-        )}
+      {loadState === 'loading' && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Spinner />
+        </div>
+      )}
 
-        {loadState === 'error' && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 40 }}>
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: t.surfaceHover, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>&#9888;</div>
-            <span style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary }}>数据加载失败</span>
-            <span style={{ fontSize: 12, color: t.textTertiary, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
-              {errorMsg || '无法获取模型统计数据'}
-            </span>
-            <button
-              onClick={() => loadData()}
-              style={{
-                marginTop: 4, padding: '8px 20px', borderRadius: 6,
-                border: 'none', background: t.accentBlue, color: '#fff',
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              }}
-            >
-              重试
-            </button>
-          </div>
-        )}
+      {loadState === 'error' && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 40 }}>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: t.surfaceHover, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>&#9888;</div>
+          <span style={{ fontSize: t.fsH2, fontWeight: 600, color: t.textPrimary }}>数据加载失败</span>
+          <span style={{ fontSize: t.fsSecondary, color: t.textTertiary, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
+            {errorMsg || '无法获取模型统计数据'}
+          </span>
+          <button onClick={() => loadData()}
+            style={{ marginTop: 4, padding: '8px 20px', borderRadius: 6, border: 'none', background: t.accentBlue, color: '#fff', fontSize: t.fsBody, fontWeight: 500, cursor: 'pointer' }}>
+            重试
+          </button>
+        </div>
+      )}
 
-        {loadState === 'loaded' && !models && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-            <span style={{ fontSize: 13, color: t.textTertiary }}>暂无模型数据</span>
-          </div>
-        )}
+      {loadState === 'loaded' && !models && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+          <span style={{ fontSize: t.fsBody, color: t.textTertiary }}>暂无模型数据</span>
+        </div>
+      )}
 
-        {loadState === 'loaded' && models && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <ModelUsage models={models} />
-          </div>
-        )}
-      </div>
-    </div>
+      {loadState === 'loaded' && models && (
+        <ModelUsage models={models} />
+      )}
+    </PageLayout>
   );
 }

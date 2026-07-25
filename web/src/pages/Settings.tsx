@@ -1,5 +1,5 @@
 import { t } from '../tokens';
-import { Sidebar } from '../components/Sidebar';
+import { PageLayout } from '../components/PageLayout';
 import { AccountTable } from '../components/AccountTable';
 
 interface Props { onNavigate: (page: string) => void }
@@ -10,84 +10,84 @@ export function Settings({ onNavigate }: Props) {
   const chipBase = { height: 24, paddingLeft: 8, paddingRight: 8, borderRadius: 4, display: 'flex', alignItems: 'center', fontSize: 12, fontWeight: 500, cursor: 'not-allowed', opacity: 0.4 } as const;
 
   return (
-    <div style={{ display: 'flex', height: '100%' }}>
-      <Sidebar active="settings" onNavigate={onNavigate} />
-      <div style={{ flex: 1, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
-        <div style={{ background: t.surfaceAlt, borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.5)', width: 480, overflow: 'hidden', maxHeight: '90vh', overflowY: 'auto' }}>
-          {/* Title */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 16, paddingTop: 14, paddingBottom: 14 }}>
-            <span style={{ fontSize: 16, fontWeight: 600, color: t.textPrimary }}>设置</span>
-            <button onClick={() => onNavigate('dashboard')} style={{ background: 'transparent', border: 'none', color: t.textTertiary, cursor: 'pointer', fontSize: 14 }}>&#10005;</button>
-          </div>
-          <div style={{ height: 1, background: t.surfaceBorder }} />
+    <PageLayout active="settings" title="设置" onNavigate={onNavigate}>
+      <div style={{
+        background: t.surfaceAlt, borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+        width: 480, overflow: 'hidden', maxHeight: '90vh', overflowY: 'auto', alignSelf: 'center',
+      }}>
+        {/* Title */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 16, paddingTop: 14, paddingBottom: 14 }}>
+          <span style={{ fontSize: t.fsH2, fontWeight: 600, color: t.textPrimary }}>设置</span>
+          <button onClick={() => onNavigate('dashboard')} style={{ background: 'transparent', border: 'none', color: t.textTertiary, cursor: 'pointer', fontSize: 14 }}>&#10005;</button>
+        </div>
+        <div style={{ height: 1, background: t.surfaceBorder }} />
 
-          {/* General */}
-          <Section title="通用设置">
-            <Row label="开机自动启动">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={disabledToggle}><div style={disabledKnob} /></div>
-                <span style={{ fontSize: 11, color: t.textTertiary, background: t.surfaceHover, padding: '2px 6px', borderRadius: 3 }}>即将支持</span>
-              </div>
-            </Row>
-            <Row label="刷新频率">
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ ...chipBase, background: t.surfaceHover, color: t.textSecondary }}>5分钟</div>
-                  <div style={{ ...chipBase, background: t.surfaceHover, color: t.textSecondary }}>30分钟</div>
-                  <div style={{ ...chipBase, background: t.surfaceHover, color: t.textSecondary }}>60分钟</div>
-                </div>
-                <span style={{ fontSize: 11, color: t.textTertiary, background: t.surfaceHover, padding: '2px 6px', borderRadius: 3 }}>即将支持</span>
-              </div>
-            </Row>
-          </Section>
-
-          <div style={{ height: 1, background: t.surfaceBorder }} />
-
-          {/* Display */}
-          <Section title="外观设置">
-            <Row label="悬浮球">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={disabledToggle}><div style={disabledKnob} /></div>
-                <span style={{ fontSize: 11, color: t.textTertiary, background: t.surfaceHover, padding: '2px 6px', borderRadius: 3 }}>即将支持</span>
-              </div>
-            </Row>
-            <Row label="主题">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 28, paddingLeft: 10, paddingRight: 10, borderRadius: 4, background: t.surfaceHover, cursor: 'not-allowed', opacity: 0.4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: t.textPrimary }}>深色模式</span>
-                  <span style={{ color: t.textTertiary, fontSize: 14 }}>&gt;</span>
-                </div>
-                <span style={{ fontSize: 11, color: t.textTertiary, background: t.surfaceHover, padding: '2px 6px', borderRadius: 3 }}>即将支持</span>
-              </div>
-            </Row>
-          </Section>
-
-          <div style={{ height: 1, background: t.surfaceBorder }} />
-
-          {/* Privacy */}
-          <Section title="隐私设置">
+        {/* General */}
+        <Section title="通用设置">
+          <Row label="开机自动启动">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 14, height: 16, borderRadius: 2, background: t.textTertiary }} />
-              <span style={{ fontSize: 12, color: t.textSecondary }}>数据仅保存在本机 · 不上传用户数据</span>
+              <div style={disabledToggle}><div style={disabledKnob} /></div>
+              <span style={{ fontSize: t.fsWeak, color: t.textTertiary, background: t.surfaceHover, padding: '2px 6px', borderRadius: 3 }}>即将支持</span>
             </div>
-          </Section>
+          </Row>
+          <Row label="刷新频率">
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ ...chipBase, background: t.surfaceHover, color: t.textSecondary }}>5分钟</div>
+                <div style={{ ...chipBase, background: t.surfaceHover, color: t.textSecondary }}>30分钟</div>
+                <div style={{ ...chipBase, background: t.surfaceHover, color: t.textSecondary }}>60分钟</div>
+              </div>
+              <span style={{ fontSize: t.fsWeak, color: t.textTertiary, background: t.surfaceHover, padding: '2px 6px', borderRadius: 3 }}>即将支持</span>
+            </div>
+          </Row>
+        </Section>
 
-          <div style={{ height: 1, background: t.surfaceBorder }} />
+        <div style={{ height: 1, background: t.surfaceBorder }} />
 
-          {/* Accounts */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 20, paddingRight: 20, paddingTop: 16, paddingBottom: 16 }}>
-            <AccountTable />
+        {/* Display */}
+        <Section title="外观设置">
+          <Row label="悬浮球">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={disabledToggle}><div style={disabledKnob} /></div>
+              <span style={{ fontSize: t.fsWeak, color: t.textTertiary, background: t.surfaceHover, padding: '2px 6px', borderRadius: 3 }}>即将支持</span>
+            </div>
+          </Row>
+          <Row label="主题">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 28, paddingLeft: 10, paddingRight: 10, borderRadius: 4, background: t.surfaceHover, cursor: 'not-allowed', opacity: 0.4 }}>
+                <span style={{ fontSize: t.fsSecondary, fontWeight: 500, color: t.textPrimary }}>深色模式</span>
+                <span style={{ color: t.textTertiary, fontSize: 14 }}>&gt;</span>
+              </div>
+              <span style={{ fontSize: t.fsWeak, color: t.textTertiary, background: t.surfaceHover, padding: '2px 6px', borderRadius: 3 }}>即将支持</span>
+            </div>
+          </Row>
+        </Section>
+
+        <div style={{ height: 1, background: t.surfaceBorder }} />
+
+        {/* Privacy */}
+        <Section title="隐私设置">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 14, height: 16, borderRadius: 2, background: t.textTertiary }} />
+            <span style={{ fontSize: t.fsSecondary, color: t.textSecondary }}>数据仅保存在本机 · 不上传用户数据</span>
           </div>
+        </Section>
+
+        <div style={{ height: 1, background: t.surfaceBorder }} />
+
+        {/* Accounts */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
+          <AccountTable />
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 20, paddingRight: 20, paddingTop: 16, paddingBottom: 16 }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary }}>{title}</span>
+      <span style={{ fontSize: t.fsSecondary, fontWeight: 600, color: t.textSecondary }}>{title}</span>
       {children}
     </div>
   );

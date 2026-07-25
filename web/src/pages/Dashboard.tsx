@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Sidebar } from '../components/Sidebar';
-import { Header } from '../components/Header';
+import { PageLayout } from '../components/PageLayout';
 import { PlanCard } from '../components/PlanCard';
 import { QuotaCard } from '../components/QuotaCard';
 import { TokenUsage } from '../components/TokenUsage';
@@ -64,51 +63,33 @@ export function Dashboard({ onNavigate, onMinimize, onClose }: Props) {
   // ─── 加载状态 ─────────────────────────────────────────────────
   if (loadState === 'loading') {
     return (
-      <div style={{ display: 'flex', height: '100%' }}>
-        <Sidebar active="dashboard" onNavigate={onNavigate} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Header onSettings={() => onNavigate('settings')} onMinimize={onMinimize} onClose={onClose} />
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Spinner />
-          </div>
+      <PageLayout active="dashboard" title="仪表盘" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Spinner />
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   // ─── 错误状态 ─────────────────────────────────────────────────
   if (loadState === 'error') {
     return (
-      <div style={{ display: 'flex', height: '100%' }}>
-        <Sidebar active="dashboard" onNavigate={onNavigate} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Header onSettings={() => onNavigate('settings')} onMinimize={onMinimize} onClose={onClose} />
-          <div style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'column', gap: 16, padding: 40,
-          }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: '50%',
-              background: t.surfaceHover, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 20,
-            }}>&#9888;</div>
-            <span style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary }}>数据加载失败</span>
-            <span style={{ fontSize: 12, color: t.textTertiary, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
-              {errorMsg || '无法获取使用数据，请检查 OpenCode 是否正常运行'}
-            </span>
-            <button
-              onClick={() => { refreshAndNotify().catch(() => loadData()); }}
-              style={{
-                marginTop: 4, padding: '8px 20px', borderRadius: 6,
-                border: 'none', background: t.accentBlue, color: '#fff',
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              }}
-            >
-              重试
-            </button>
-          </div>
+      <PageLayout active="dashboard" title="仪表盘" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexDirection: 'column', gap: 16, padding: 40,
+        }}>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: t.surfaceHover, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>&#9888;</div>
+          <span style={{ fontSize: t.fsH2, fontWeight: 600, color: t.textPrimary }}>数据加载失败</span>
+          <span style={{ fontSize: t.fsSecondary, color: t.textTertiary, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
+            {errorMsg || '无法获取使用数据，请检查 OpenCode 是否正常运行'}
+          </span>
+          <button onClick={() => { refreshAndNotify().catch(() => loadData()); }}
+            style={{ marginTop: 4, padding: '8px 20px', borderRadius: 6, border: 'none', background: t.accentBlue, color: '#fff', fontSize: t.fsBody, fontWeight: 500, cursor: 'pointer' }}>
+            重试
+          </button>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -116,44 +97,32 @@ export function Dashboard({ onNavigate, onMinimize, onClose }: Props) {
   const noData = !account || !quota || !tokens || !models;
   if (noData) {
     return (
-      <div style={{ display: 'flex', height: '100%' }}>
-        <Sidebar active="dashboard" onNavigate={onNavigate} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Header onSettings={() => onNavigate('settings')} onMinimize={onMinimize} onClose={onClose} />
-          <div style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'column', gap: 12,
-          }}>
-            <span style={{ fontSize: 13, color: t.textTertiary }}>暂无使用数据</span>
-          </div>
+      <PageLayout active="dashboard" title="仪表盘" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+          <span style={{ fontSize: t.fsBody, color: t.textTertiary }}>暂无使用数据</span>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   // ─── 正常展示 ─────────────────────────────────────────────────
+  // ─── 正常展示 ─────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', height: '100%' }}>
-      <Sidebar active="dashboard" onNavigate={onNavigate} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header onSettings={() => onNavigate('settings')} onMinimize={onMinimize} onClose={onClose} />
-        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <PlanCard plan={account.plan} status={account.status} expireDate={account.expireDate} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-            <QuotaCard title="5小时额度" percentage={quota.fiveHourPercent} resetTime={quota.fiveHourReset} />
-            <QuotaCard title="本周额度" percentage={quota.weeklyPercent} resetTime={quota.weeklyReset} />
-            <QuotaCard title="本月额度" percentage={quota.monthlyPercent} />
-          </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <TokenUsage data={tokens.tokenHistory} today={tokens.tokenToday} week={tokens.token7d} month={tokens.token30d} />
-            </div>
-            <div style={{ width: 296, flexShrink: 0 }}>
-              <ModelUsage models={models} />
-            </div>
-          </div>
+    <PageLayout active="dashboard" title="仪表盘" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
+      <PlanCard plan={account.plan} status={account.status} expireDate={account.expireDate} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        <QuotaCard title="5小时额度" percentage={quota.fiveHourPercent} resetTime={quota.fiveHourReset} />
+        <QuotaCard title="本周额度" percentage={quota.weeklyPercent} resetTime={quota.weeklyReset} />
+        <QuotaCard title="本月额度" percentage={quota.monthlyPercent} />
+      </div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <TokenUsage data={tokens.tokenHistory} today={tokens.tokenToday} week={tokens.token7d} month={tokens.token30d} />
+        </div>
+        <div style={{ width: 296, flexShrink: 0 }}>
+          <ModelUsage models={models} />
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
