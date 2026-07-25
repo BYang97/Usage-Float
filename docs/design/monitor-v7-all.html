@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Usage Float v7 · 设计稿</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,"Segoe UI",sans-serif; }
+body { background:#eef0f2; padding:48px 24px 80px; color:#1a1d21; }
+.canvas { max-width:680px; margin:0 auto; }
+.doc-header { text-align:center; margin-bottom:48px; padding-bottom:32px; border-bottom:1px solid #d8dce0; }
+.doc-header h1 { font-size:32px; font-weight:700; margin-bottom:10px; background:linear-gradient(135deg,#6366f1,#8b5cf6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.doc-header .sub { font-size:14px; color:#6b7280; }
+.doc-header .meta { font-size:11px; color:#9ca3af; margin-top:8px; letter-spacing:.5px; }
+.frame { margin-bottom:56px; }
+.frame-label { display:flex; align-items:center; gap:10px; margin-bottom:14px; padding-left:4px; flex-wrap:wrap; }
+.frame-num { font-size:11px; font-weight:700; color:#fff; background:linear-gradient(135deg,#6366f1,#8b5cf6); padding:3px 10px; border-radius:10px; }
+.frame-name { font-size:17px; font-weight:700; color:#1a1d21; }
+.frame-desc { font-size:12px; color:#9ca3af; }
+.frame-tag { font-size:10px; font-weight:600; color:#10b981; background:#ecfdf5; padding:2px 8px; border-radius:4px; margin-left:auto; }
+.frame-board { background:#fff; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.08),0 2px 8px rgba(0,0,0,0.04); overflow:hidden; }
+.frame-board iframe { width:100%; border:none; display:block; background:#f8f9fa; }
+.frame-notes { margin-top:14px; padding:12px 16px; background:#fff; border-radius:10px; border-left:3px solid #6366f1; font-size:12px; color:#6b7280; line-height:1.7; }
+.frame-notes strong { color:#1a1d21; }
+.frame-notes .fix { display:inline-block; font-size:10px; font-weight:600; color:#6366f1; background:#eef2ff; padding:1px 7px; border-radius:4px; margin-right:6px; margin-bottom:3px; }
+.float-board { background:#e4e7eb !important; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="doc-header">
+    <h1>Usage Float v7</h1>
+    <div class="sub">监控面板设计稿 · 修复双 agent 评审问题</div>
+    <div class="meta">6 个页面 · 预警强化 + 三态稿 + 可访问性 · 2026-07-25</div>
+  </div>
+
+  <div class="frame">
+    <div class="frame-label"><span class="frame-num">01</span><span class="frame-name">Dashboard</span><span class="frame-desc">首页 · 配额预警强化</span><span class="frame-tag">P0 修复</span></div>
+    <div class="frame-board"><iframe src="monitor-v7-dashboard.html" height="1320" onload="rz(this)" scrolling="no"></iframe></div>
+    <div class="frame-notes"><span class="fix">P0</span><span class="fix">P1</span><strong>配额预警强化</strong>：>85% 黄色左边框 / >95% 红色边框+背景渐变+顶部 banner+圆环脉动动画；模型区去重为"最近使用 Top 2"+查看全部链接；新增失效账号卡片（红色边框+重新授权）；card 圆角 16px、弱文本 #6b7280。</div>
+  </div>
+
+  <div class="frame">
+    <div class="frame-label"><span class="frame-num">02</span><span class="frame-name">History</span><span class="frame-desc">使用记录 · 排序+筛选+骨架</span><span class="frame-tag">P1 修复</span></div>
+    <div class="frame-board"><iframe src="monitor-v7-history.html" height="920" onload="rz(this)" scrolling="no"></iframe></div>
+    <div class="frame-notes"><span class="fix">P1</span><span class="fix">P2</span><strong>表头排序</strong>（↑↓ hover）+ <strong>日期范围 chips</strong>（今日/7天/30天）+ <strong>空状态稿</strong> + <strong>loading 骨架屏</strong>（shimmer 动画）。</div>
+  </div>
+
+  <div class="frame">
+    <div class="frame-label"><span class="frame-num">03</span><span class="frame-name">Models</span><span class="frame-desc">模型统计 · 未识别处理</span></div>
+    <div class="frame-board"><iframe src="monitor-v7-models.html" height="620" onload="rz(this)" scrolling="no"></iframe></div>
+    <div class="frame-notes"><span class="fix">P2</span><span class="fix">P3</span><strong>"未知"改"未识别"</strong> + 虚线条纹填充；.mc 复用 .card；空状态稿。</div>
+  </div>
+
+  <div class="frame">
+    <div class="frame-label"><span class="frame-num">04</span><span class="frame-name">Settings</span><span class="frame-desc">设置 · 可交互+确认</span><span class="frame-tag">P1 修复</span></div>
+    <div class="frame-board"><iframe src="monitor-v7-settings.html" height="1120" onload="rz(this)" scrolling="no"></iframe></div>
+    <div class="frame-notes"><span class="fix">P1</span><span class="fix">P2</span><strong>可交互 mockup</strong>（刷新频率 chips 选中态 + 主题选择器）+ <strong>删除 popover 二次确认</strong> + 编辑 modal 样式。</div>
+  </div>
+
+  <div class="frame">
+    <div class="frame-label"><span class="frame-num">05</span><span class="frame-name">Float Widget</span><span class="frame-desc">悬浮窗 · 拖拽+账号切换</span></div>
+    <div class="frame-board float-board"><iframe src="monitor-v7-float.html" height="320" scrolling="no"></iframe></div>
+    <div class="frame-notes"><span class="fix">P2</span><strong>拖拽手柄</strong>（顶部 4px 线 cursor:grab）+ 按钮 32×32 + <strong>账号切换下拉</strong>（上下文衔接）。</div>
+  </div>
+
+  <div class="frame">
+    <div class="frame-label"><span class="frame-num">06</span><span class="frame-name">States</span><span class="frame-desc">状态稿 · 4 种场景</span><span class="frame-tag">P1 新增</span></div>
+    <div class="frame-board"><iframe src="monitor-v7-states.html" height="1720" onload="rz(this)" scrolling="no"></iframe></div>
+    <div class="frame-notes"><span class="fix">P1</span><strong>4 种状态画板</strong>：① 空账号（插图+CTA）② 加载中（骨架屏 shimmer）③ 错误（⚠+错误信息+重试）④ 超额警告（红色 banner+脉动圆环）。</div>
+  </div>
+</div>
+<script>
+function rz(f){try{var h=f.contentDocument.body.scrollHeight;if(h>0)f.style.height=h+24+'px';}catch(e){}}
+</script>
+</body>
+</html>
