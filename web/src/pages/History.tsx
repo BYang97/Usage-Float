@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
@@ -25,6 +25,8 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
   const [historyError, setHistoryError] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  const cursorRef = useRef(0);
+  const [hasMore, setHasMore] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
@@ -39,7 +41,7 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
     }
   }, []);
 
-  const loadHistory = useCallback(async (accountId?: string) => {
+  const loadHistory = useCallback(async (accountId?: string, append?: boolean) => {
     try {
       setHistoryLoadState('loading');
       setHistoryError('');
@@ -54,14 +56,24 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
         setHistoryLoadState('loaded');
         return;
       }
-      if (accountId && accountId !== selectedAccountId) {
+      const isSwitch = accountId != null && accountId !== selectedAccountId;
+      if (isSwitch) {
         setSelectedAccountId(accountId);
+        cursorRef.current = 0;
+        setHasMore(true);
       }
+      const effectiveCursor = (append && !isSwitch) ? cursorRef.current : 0;
       const items = await invoke<UsageHistoryItem[]>('get_usage_history', {
         accountId: accId,
-        cursor: 0,
+        cursor: effectiveCursor,
       });
-      setHistoryItems(items);
+      if (append && !isSwitch) {
+        setHistoryItems(prev => [...prev, ...items]);
+      } else {
+        setHistoryItems(items);
+      }
+      cursorRef.current = effectiveCursor + 50;
+      setHasMore(items.length >= 50);
       setHistoryLoadState('loaded');
     } catch (err) {
       setHistoryError(err instanceof Error ? err.message : '加载用量历史失败');
@@ -195,6 +207,22 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
                     </tbody>
                   </table>
                 </div>
+                {hasMore && (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+                    <button
+                      onClick={() => loadHistory(undefined, true)}
+                      disabled={historyLoadState === 'loading'}
+                      style={{
+                        padding: '6px 20px', borderRadius: 6,
+                        border: `1px solid ${t.surfaceBorder}`, background: t.surface,
+                        color: t.textPrimary, fontSize: 12, cursor: 'pointer',
+                        opacity: historyLoadState === 'loading' ? 0.5 : 1,
+                      }}
+                    >
+                      {historyLoadState === 'loading' ? '加载中…' : '加载更多'}
+                    </button>
+                  </div>
+                )}
               )}
             </div>
           </div>
