@@ -13,9 +13,9 @@ pub fn mock_usage_data() -> UsageData {
     },
     quota: QuotaInfo {
       five_hour_percent: 82.0,
-      five_hour_reset: "01:42:30".to_string(),
+      five_hour_reset: "1h 42m".to_string(),
       weekly_percent: 63.0,
-      weekly_reset: "周五 09:00".to_string(),
+      weekly_reset: "72h 0m".to_string(),
       monthly_percent: 45.0,
     },
     tokens: TokenInfo {

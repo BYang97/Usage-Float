@@ -80,6 +80,13 @@ body,
   background: var(--color-surface-border);
   border-radius: 999px;
 }
+/* ============================================================
+ * 共享动画
+ * ============================================================ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 
 /* ============================================================
  * 组件层 (Tailwind v4 @utility 等价于 @layer components)
