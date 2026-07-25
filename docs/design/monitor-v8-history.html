@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Usage Float v8 · 使用记录</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,sans-serif; }
+body { background:#eef0f2; min-height:100vh; display:flex; align-items:center; justify-content:center; position:relative; }
+
+/* ===== Window ===== */
+.window { width:1000px; height:700px; border-radius:16px; overflow:hidden; display:flex; background:#fff; box-shadow:0 12px 48px rgba(0,0,0,0.10),0 4px 12px rgba(0,0,0,0.04); }
+
+/* ===== Sidebar ===== */
+.sidebar { width:240px; height:700px; flex-shrink:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); display:flex; flex-direction:column; overflow:hidden; }
+.sidebar .logo { height:56px; display:flex; align-items:center; gap:10px; padding:0 16px; flex-shrink:0; }
+.sidebar .logo .icon { width:20px; height:20px; border-radius:5px; background:#6366f1; flex-shrink:0; }
+.sidebar .logo span { font-size:14px; font-weight:600; color:#1a1d21; white-space:nowrap; }
+.sidebar .divider { height:1px; background:#e9ecef; margin:0 16px; }
+.sidebar .nav { padding:10px; display:flex; flex-direction:column; gap:4px; flex:1; }
+.sidebar .nav-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-size:14px; font-weight:500; width:100%; background:transparent; color:#6b7280; text-align:left; transition:all .12s; }
+.sidebar .nav-item:hover { background:#f1f3f5; }
+.sidebar .nav-item.active { background:linear-gradient(135deg,#6366f1,#06b6d4); color:#fff; }
+.sidebar .nav-item .dot { width:16px; height:16px; border-radius:3px; flex-shrink:0; background:#9ca3af; }
+.sidebar .nav-item.active .dot { background:#fff; }
+.sidebar .toggle-wrap { margin-top:auto; padding:10px; }
+.sidebar .toggle-wrap button { display:flex; align-items:center; justify-content:center; width:100%; padding:8px; border-radius:8px; border:none; cursor:pointer; background:transparent; color:#9ca3af; font-size:14px; transition:color .15s; }
+.sidebar .toggle-wrap button:hover { color:#6b7280; background:#f1f3f5; }
+
+/* ===== Main ===== */
+.main { flex:1; display:flex; flex-direction:column; background:#f8f9fa; }
+
+/* ===== Header ===== */
+.header { height:56px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:#f8f9fa; border-bottom:1px solid #e9ecef; }
+.header .left { display:flex; align-items:center; gap:8px; }
+.header .left h1 { font-size:20px; font-weight:700; color:#1a1d21; }
+.header .right { display:flex; align-items:center; gap:4px; }
+.header .right button { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:none; background:transparent; color:#6b7280; cursor:pointer; font-size:12px; transition:background .15s; }
+.header .right button:hover { background:#f1f3f5; }
+
+/* ===== Content ===== */
+.content { flex:1; height:644px; padding:16px; gap:12px; overflow-y:auto; display:flex; flex-direction:column; }
+
+/* ===== Card ===== */
+.card { background:#fff; border-radius:16px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02); transition:all .2s; }
+.card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.06); transform:translateY(-1px); }
+
+/* ===== Section ===== */
+.section-title { font-size:13px; font-weight:600; color:#6b7280; }
+
+/* ===== Token Grid ===== */
+.token-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.token .label { font-size:10px; color:#6b7280; display:block; margin-bottom:2px; }
+.token .val { font-size:20px; font-weight:700; color:#1a1d21; }
+.token.accent .val { color:#6366f1; }
+
+/* ===== Table ===== */
+.table-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
+.chip-group { display:flex; gap:4px; }
+.chip-date { font-size:11px; font-weight:500; color:#6b7280; background:#f1f3f5; border-radius:12px; padding:4px 12px; cursor:pointer; transition:all .15s; }
+.chip-date:hover { background:#e9ecef; }
+.chip-date.active { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; }
+.table-header select { background:#fff; border:1px solid #e9ecef; border-radius:4px; padding:4px 8px; font-size:12px; color:#1a1d21; cursor:pointer; outline:none; }
+.table-header select:focus { border-color:#6366f1; }
+table { width:100%; border-collapse:collapse; }
+th { font-size:11px; font-weight:500; color:#6b7280; padding:8px 6px; text-align:left; border-bottom:1px solid #e9ecef; white-space:nowrap; }
+th .sort { display:inline-flex; flex-direction:column; vertical-align:middle; margin-left:4px; line-height:1; }
+th .sort .arrow-up, th .sort .arrow-down { display:block; font-size:8px; color:#d1d5db; line-height:1; }
+th:hover .sort .arrow-up, th:hover .sort .arrow-down { color:#6b7280; }
+td { font-size:13px; color:#1a1d21; padding:8px 6px; border-bottom:1px solid #f1f3f5; }
+tr:hover td { background:#f8f9fa; }
+th.num, td.num { text-align:right; }
+td.num { font-variant-numeric:tabular-nums; }
+td.time { color:#6b7280; white-space:nowrap; }
+.load-more { display:flex; justify-content:center; padding:8px 0 4px; }
+.load-more button { background:#fff; border:1px solid #e9ecef; border-radius:12px; padding:6px 20px; font-size:12px; color:#6b7280; cursor:pointer; transition:all .15s; }
+.load-more button:hover { border-color:#6366f1; color:#6366f1; background:#f5f3ff; }
+
+/* ===== Empty state ===== */
+.empty-state { text-align:center; padding:40px 20px; }
+.empty-icon { width:72px; height:72px; background:#f1f3f5; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+.empty-title { font-size:16px; font-weight:600; color:#1a1d21; margin-bottom:6px; }
+.empty-desc { font-size:13px; color:#6b7280; line-height:1.5; }
+
+/* ===== Skeleton ===== */
+@keyframes shimmer { 0%{background-position:-200px 0} 100%{background-position:calc(200px + 100%) 0} }
+.skeleton { background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:4px; }
+.skeleton-row { display:flex; align-items:center; gap:12px; padding:10px 0; }
+.skeleton-cell { height:12px; background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:4px; }
+
+/* ===== Spec annotation ===== */
+.spec-anno { position:fixed; bottom:16px; right:16px; background:rgba(0,0,0,0.75); color:#fff; font-size:11px; border-radius:10px; padding:10px 14px; line-height:1.6; font-family:ui-monospace,monospace; z-index:10; backdrop-filter:blur(4px); }
+.spec-anno .dim { color:rgba(255,255,255,0.45); }
+</style>
+</head>
+<body>
+<div class="window">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="icon"></div>
+      <span>OpenCode Usage Float</span>
+    </div>
+    <div class="divider"></div>
+    <div class="nav">
+      <button class="nav-item"><div class="dot"></div>首页</button>
+      <button class="nav-item active"><div class="dot"></div>使用记录</button>
+      <button class="nav-item"><div class="dot"></div>模型统计</button>
+      <button class="nav-item"><div class="dot"></div>设置</button>
+    </div>
+    <div class="toggle-wrap">
+      <button>◀</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="header">
+      <div class="left"><h1>使用记录</h1></div>
+      <div class="right">
+        <button>⚙</button>
+        <button>─</button>
+        <button>✕</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-title">Token 消耗汇总</div>
+      <div class="card"><div class="token-grid">
+        <div class="token"><span class="label">今日</span><span class="val">65.7M</span></div>
+        <div class="token accent"><span class="label">近7天</span><span class="val">104.9M</span></div>
+        <div class="token"><span class="label">近30天</span><span class="val">496.2M</span></div>
+      </div></div>
+
+      <div class="section-title">用量历史</div>
+      <div class="card">
+        <div class="table-header">
+          <div class="chip-group">
+            <span class="chip-date">今日</span>
+            <span class="chip-date active">7天</span>
+            <span class="chip-date">30天</span>
+          </div>
+          <select>
+            <option>全部账号</option>
+            <option>默认</option>
+            <option>测试账号</option>
+            <option>团队号</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>时间 <span class="sort"><span class="arrow-up">▲</span><span class="arrow-down">▼</span></span></th>
+              <th>模型</th>
+              <th>Provider</th>
+              <th class="num">Input</th>
+              <th class="num">Output</th>
+              <th class="num">Reasoning</th>
+              <th class="num">Cache</th>
+              <th class="num">费用 <span class="sort"><span class="arrow-up">▲</span><span class="arrow-down">▼</span></span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="time">2026-07-25 14:32</td>
+              <td>deepseek-v4-flash</td>
+              <td>qoderclicn</td>
+              <td class="num">1,234</td>
+              <td class="num">5,678</td>
+              <td class="num">890</td>
+              <td class="num">123</td>
+              <td class="num">$0.0123</td>
+            </tr>
+            <tr>
+              <td class="time">2026-07-25 13:15</td>
+              <td>gpt-5.5</td>
+              <td>openai</td>
+              <td class="num">456</td>
+              <td class="num">1,234</td>
+              <td class="num">—</td>
+              <td class="num">—</td>
+              <td class="num">$0.0456</td>
+            </tr>
+            <tr>
+              <td class="time">2026-07-25 11:40</td>
+              <td>未识别</td>
+              <td>unknown</td>
+              <td class="num">789</td>
+              <td class="num">2,345</td>
+              <td class="num">—</td>
+              <td class="num">56</td>
+              <td class="num">$0.0089</td>
+            </tr>
+            <tr>
+              <td class="time">2026-07-24 22:10</td>
+              <td>deepseek-v4-flash</td>
+              <td>qoderclicn</td>
+              <td class="num">2,345</td>
+              <td class="num">8,901</td>
+              <td class="num">1,234</td>
+              <td class="num">456</td>
+              <td class="num">$0.0234</td>
+            </tr>
+            <tr>
+              <td class="time">2026-07-24 18:55</td>
+              <td>gpt-5.5</td>
+              <td>openai</td>
+              <td class="num">678</td>
+              <td class="num">3,456</td>
+              <td class="num">—</td>
+              <td class="num">—</td>
+              <td class="num">$0.0789</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="load-more"><button>加载更多</button></div>
+      </div>
+
+      <!-- 空状态示例（注释，替换上方表格展示） -->
+      <!--
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <div class="empty-title">暂无用量历史</div>
+          <div class="empty-desc">开始使用 API 后，每次调用的详细记录将展示在此处</div>
+        </div>
+      </div>
+      -->
+
+      <!-- 骨架屏示例（注释，替换上方表格展示） -->
+      <!--
+      <div class="card">
+        <div class="table-header"><span class="title">用量历史</span></div>
+        <div class="skeleton-row"><div class="skeleton-cell" style="width:140px;height:12px"></div><div class="skeleton-cell" style="width:100px;height:12px"></div><div class="skeleton-cell" style="width:60px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div></div>
+        <div class="skeleton-row"><div class="skeleton-cell" style="width:120px;height:12px"></div><div class="skeleton-cell" style="width:110px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div><div class="skeleton-cell" style="width:60px;height:12px"></div><div class="skeleton-cell" style="width:40px;height:12px"></div></div>
+        <div class="skeleton-row"><div class="skeleton-cell" style="width:130px;height:12px"></div><div class="skeleton-cell" style="width:90px;height:12px"></div><div class="skeleton-cell" style="width:70px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div></div>
+        <div class="load-more" style="margin-top:8px"><button>加载更多</button></div>
+      </div>
+      -->
+    </div>
+  </div>
+</div>
+
+<div class="spec-anno">
+  <div>画板: 1000×700</div>
+  <div>Sidebar: 240 <span class="dim">|</span> Header: 56</div>
+  <div>内容区: 760×644 <span class="dim">(padding 16, gap 12)</span></div>
+</div>
+</body>
+</html>

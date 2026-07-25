@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Usage Float v8 · 状态稿</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,sans-serif; }
+body { background:#eef0f2; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:32px; position:relative; gap:24px; }
+.page-title { font-size:20px; font-weight:700; color:#1a1d21; text-align:center; margin-bottom:8px; }
+.state-row { display:flex; gap:24px; flex-wrap:wrap; justify-content:center; }
+
+/* ===== State Board ===== */
+.state-board { width:1000px; height:700px; border-radius:16px; overflow:hidden; display:flex; background:#fff; box-shadow:0 12px 48px rgba(0,0,0,0.10),0 4px 12px rgba(0,0,0,0.04); }
+
+/* ===== Sidebar ===== */
+.sidebar { width:240px; height:700px; flex-shrink:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); display:flex; flex-direction:column; overflow:hidden; }
+.sidebar .logo { height:56px; display:flex; align-items:center; gap:10px; padding:0 16px; flex-shrink:0; }
+.sidebar .logo .icon { width:20px; height:20px; border-radius:5px; background:#6366f1; flex-shrink:0; }
+.sidebar .logo span { font-size:14px; font-weight:600; color:#1a1d21; white-space:nowrap; }
+.sidebar .divider { height:1px; background:#e9ecef; margin:0 16px; }
+.sidebar .nav { padding:10px; display:flex; flex-direction:column; gap:4px; flex:1; }
+.sidebar .nav-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; border:none; cursor:default; font-size:14px; font-weight:500; width:100%; background:transparent; color:#6b7280; text-align:left; }
+.sidebar .nav-item.active { background:linear-gradient(135deg,#6366f1,#06b6d4); color:#fff; }
+.sidebar .nav-item .dot { width:16px; height:16px; border-radius:3px; flex-shrink:0; background:#9ca3af; }
+.sidebar .nav-item.active .dot { background:#fff; }
+.sidebar .toggle-wrap { margin-top:auto; padding:10px; }
+.sidebar .toggle-wrap button { display:flex; align-items:center; justify-content:center; width:100%; padding:8px; border-radius:8px; border:none; cursor:default; background:transparent; color:#9ca3af; font-size:14px; }
+
+/* ===== Main ===== */
+.main { flex:1; display:flex; flex-direction:column; background:#f8f9fa; }
+
+/* ===== Header ===== */
+.header { height:56px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:#f8f9fa; border-bottom:1px solid #e9ecef; }
+.header .left { display:flex; align-items:center; gap:8px; }
+.header .left h1 { font-size:20px; font-weight:700; color:#1a1d21; }
+.header .right { display:flex; align-items:center; gap:4px; }
+.header .right button { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:none; background:transparent; color:#6b7280; cursor:default; font-size:12px; }
+
+/* ===== Content ===== */
+.content { flex:1; height:644px; padding:16px; gap:12px; overflow-y:auto; display:flex; flex-direction:column; }
+
+/* ===== Card ===== */
+.card { background:#fff; border-radius:16px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02); }
+.section-title { font-size:13px; font-weight:600; color:#6b7280; margin:16px 0 8px; }
+.badge { color:#fff; font-size:10px; font-weight:600; padding:2px 8px; border-radius:9px; display:inline-block; }
+.badge.lite { background:linear-gradient(135deg,#6366f1,#8b5cf6); }
+
+/* ===== 1. Empty ===== */
+.empty-state { text-align:center; padding:48px 20px; }
+.empty-icon { width:80px; height:80px; background:#f1f3f5; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; }
+.empty-title { font-size:18px; font-weight:600; color:#1a1d21; margin-bottom:8px; }
+.empty-desc { font-size:13px; color:#6b7280; margin-bottom:24px; line-height:1.5; }
+.btn-accent { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border:none; border-radius:12px; padding:10px 24px; font-size:14px; font-weight:500; cursor:pointer; transition:opacity .15s; height:36px; }
+.btn-accent:hover { opacity:0.9; }
+
+/* ===== 2. Loading skeleton ===== */
+@keyframes shimmer { 0%{background-position:-200px 0} 100%{background-position:calc(200px + 100%) 0} }
+.skel { background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:6px; }
+.skel-card { border-radius:16px; padding:16px; margin-bottom:12px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+.skel-acc-top { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.skel-name { width:80px; height:14px; background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:4px; }
+.skel-badge { width:36px; height:14px; background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:7px; }
+.skel-rings { display:flex; gap:12px; margin-bottom:12px; }
+.skel-ring-cell { flex:1; }
+.skel-ring-label { width:40px; height:10px; margin-bottom:8px; background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:3px; }
+.skel-ring-row { display:flex; align-items:center; gap:8px; }
+.skel-circle { width:56px; height:56px; border-radius:50%; background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; flex-shrink:0; }
+.skel-ring-text { flex:1; }
+.skel-ring-text-line { height:10px; margin-bottom:4px; background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:3px; }
+.skel-ring-text-line:last-child { width:60%; margin-bottom:0; }
+.skel-tokens { display:flex; gap:16px; padding-top:10px; border-top:1px solid #f1f3f5; }
+.skel-token-item { }
+.skel-token-label { width:40px; height:8px; margin-bottom:4px; background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:3px; }
+.skel-token-val { width:50px; height:16px; background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:4px; }
+
+/* ===== 3. Error ===== */
+.error-state { text-align:center; padding:48px 20px; }
+.error-icon { width:72px; height:72px; background:#fef2f2; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+.error-title { font-size:18px; font-weight:600; color:#1a1d21; margin-bottom:8px; }
+.error-msg { font-size:13px; color:#6b7280; margin-bottom:24px; font-family:ui-monospace,monospace; background:#f1f3f5; border-radius:8px; padding:8px 12px; display:inline-block; }
+
+/* ===== 4. Over-warning ===== */
+.card-warning-red { border-left:3px solid #ef4444; background:linear-gradient(to right,rgba(239,68,68,0.06),#fff); }
+.banner-red { font-size:11px; font-weight:600; color:#ef4444; background:rgba(239,68,68,0.08); padding:4px 10px; border-radius:6px; margin-bottom:10px; display:inline-block; }
+.acc-top { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.acc-name { font-size:14px; font-weight:600; color:#1a1d21; }
+.ring-label { font-size:11px; font-weight:600; color:#6b7280; }
+.rings { display:flex; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.ring-cell { flex:1; display:flex; flex-direction:column; gap:6px; }
+.ring-row { display:flex; align-items:center; gap:8px; }
+.reset .cd { display:block; font-size:11px; font-weight:600; color:#6b7280; }
+.reset .dt { display:block; font-size:10px; color:#9ca3af; margin-top:1px; }
+.acc-tokens { display:flex; gap:16px; padding-top:10px; border-top:1px solid #f1f3f5; }
+.acc-token .label { font-size:10px; color:#6b7280; display:block; }
+.acc-token .val { font-size:13px; font-weight:600; color:#1a1d21; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+.pulse-icon { animation:pulse 1.8s ease-in-out infinite; }
+.state-label { font-size:11px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.05em; padding:8px 0 4px; }
+
+/* ===== Spec annotation ===== */
+.spec-anno { position:fixed; bottom:16px; right:16px; background:rgba(0,0,0,0.75); color:#fff; font-size:11px; border-radius:10px; padding:10px 14px; line-height:1.6; font-family:ui-monospace,monospace; z-index:10; backdrop-filter:blur(4px); }
+.spec-anno .dim { color:rgba(255,255,255,0.45); }
+</style>
+</head>
+<body>
+<div class="page-title">状态稿 · 4 种场景</div>
+
+<!-- 1. 空账号 -->
+<div class="state-board">
+  <div class="sidebar">
+    <div class="logo"><div class="icon"></div><span>OpenCode Usage Float</span></div>
+    <div class="divider"></div>
+    <div class="nav">
+      <button class="nav-item active"><div class="dot"></div>首页</button>
+      <button class="nav-item"><div class="dot"></div>使用记录</button>
+      <button class="nav-item"><div class="dot"></div>模型统计</button>
+      <button class="nav-item"><div class="dot"></div>设置</button>
+    </div>
+    <div class="toggle-wrap"><button>◀</button></div>
+  </div>
+  <div class="main">
+    <div class="header"><div class="left"><h1>仪表盘</h1></div><div class="right"><button>⚙</button><button>─</button><button>✕</button></div></div>
+    <div class="content">
+      <div class="state-label">1. 空状态 · 无账号</div>
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="empty-title">还没有账号</div>
+          <div class="empty-desc">添加 API 账号后即可实时监控你的用量</div>
+          <button class="btn-accent">添加你的第一个 API 账号</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. 加载中 -->
+<div class="state-board">
+  <div class="sidebar">
+    <div class="logo"><div class="icon"></div><span>OpenCode Usage Float</span></div>
+    <div class="divider"></div>
+    <div class="nav">
+      <button class="nav-item active"><div class="dot"></div>首页</button>
+      <button class="nav-item"><div class="dot"></div>使用记录</button>
+      <button class="nav-item"><div class="dot"></div>模型统计</button>
+      <button class="nav-item"><div class="dot"></div>设置</button>
+    </div>
+    <div class="toggle-wrap"><button>◀</button></div>
+  </div>
+  <div class="main">
+    <div class="header"><div class="left"><h1>仪表盘</h1></div><div class="right"><button>⚙</button><button>─</button><button>✕</button></div></div>
+    <div class="content">
+      <div class="state-label">2. 加载中 · 骨架屏</div>
+      <div class="skel-card">
+        <div class="skel-acc-top"><div class="skel-name"></div><div class="skel-badge"></div></div>
+        <div class="skel-rings">
+          <div class="skel-ring-cell">
+            <div class="skel-ring-label"></div>
+            <div class="skel-ring-row"><div class="skel-circle"></div><div class="skel-ring-text"><div class="skel-ring-text-line"></div><div class="skel-ring-text-line"></div></div></div>
+          </div>
+          <div class="skel-ring-cell">
+            <div class="skel-ring-label"></div>
+            <div class="skel-ring-row"><div class="skel-circle"></div><div class="skel-ring-text"><div class="skel-ring-text-line"></div><div class="skel-ring-text-line"></div></div></div>
+          </div>
+          <div class="skel-ring-cell">
+            <div class="skel-ring-label"></div>
+            <div class="skel-ring-row"><div class="skel-circle"></div><div class="skel-ring-text"><div class="skel-ring-text-line"></div><div class="skel-ring-text-line"></div></div></div>
+          </div>
+        </div>
+        <div class="skel-tokens">
+          <div class="skel-token-item"><div class="skel-token-label"></div><div class="skel-token-val"></div></div>
+          <div class="skel-token-item"><div class="skel-token-label"></div><div class="skel-token-val"></div></div>
+        </div>
+      </div>
+      <div class="skel-card">
+        <div class="skel-acc-top"><div class="skel-name"></div><div class="skel-badge"></div></div>
+        <div class="skel-rings">
+          <div class="skel-ring-cell">
+            <div class="skel-ring-label"></div>
+            <div class="skel-ring-row"><div class="skel-circle"></div><div class="skel-ring-text"><div class="skel-ring-text-line"></div><div class="skel-ring-text-line"></div></div></div>
+          </div>
+          <div class="skel-ring-cell">
+            <div class="skel-ring-label"></div>
+            <div class="skel-ring-row"><div class="skel-circle"></div><div class="skel-ring-text"><div class="skel-ring-text-line"></div><div class="skel-ring-text-line"></div></div></div>
+          </div>
+          <div class="skel-ring-cell">
+            <div class="skel-ring-label"></div>
+            <div class="skel-ring-row"><div class="skel-circle"></div><div class="skel-ring-text"><div class="skel-ring-text-line"></div><div class="skel-ring-text-line"></div></div></div>
+          </div>
+        </div>
+        <div class="skel-tokens">
+          <div class="skel-token-item"><div class="skel-token-label"></div><div class="skel-token-val"></div></div>
+          <div class="skel-token-item"><div class="skel-token-label"></div><div class="skel-token-val"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 错误 -->
+<div class="state-board">
+  <div class="sidebar">
+    <div class="logo"><div class="icon"></div><span>OpenCode Usage Float</span></div>
+    <div class="divider"></div>
+    <div class="nav">
+      <button class="nav-item active"><div class="dot"></div>首页</button>
+      <button class="nav-item"><div class="dot"></div>使用记录</button>
+      <button class="nav-item"><div class="dot"></div>模型统计</button>
+      <button class="nav-item"><div class="dot"></div>设置</button>
+    </div>
+    <div class="toggle-wrap"><button>◀</button></div>
+  </div>
+  <div class="main">
+    <div class="header"><div class="left"><h1>仪表盘</h1></div><div class="right"><button>⚙</button><button>─</button><button>✕</button></div></div>
+    <div class="content">
+      <div class="state-label">3. 错误状态</div>
+      <div class="card">
+        <div class="error-state">
+          <div class="error-icon"><span style="font-size:32px;font-weight:700;color:#ef4444;">!</span></div>
+          <div class="error-title">数据加载失败</div>
+          <div class="error-msg">Error: API 请求超时，请检查网络连接</div>
+          <div style="display:flex;gap:10px;justify-content:center;">
+            <button class="btn-accent">重试</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. 超额警告 -->
+<div class="state-board">
+  <div class="sidebar">
+    <div class="logo"><div class="icon"></div><span>OpenCode Usage Float</span></div>
+    <div class="divider"></div>
+    <div class="nav">
+      <button class="nav-item active"><div class="dot"></div>首页</button>
+      <button class="nav-item"><div class="dot"></div>使用记录</button>
+      <button class="nav-item"><div class="dot"></div>模型统计</button>
+      <button class="nav-item"><div class="dot"></div>设置</button>
+    </div>
+    <div class="toggle-wrap"><button>◀</button></div>
+  </div>
+  <div class="main">
+    <div class="header"><div class="left"><h1>仪表盘</h1></div><div class="right"><button>⚙</button><button>─</button><button>✕</button></div></div>
+    <div class="content">
+      <div class="state-label">4. 超额警告</div>
+      <div style="font-size:11px;font-weight:600;color:#ef4444;background:rgba(239,68,68,0.08);padding:6px 12px;border-radius:8px;margin-bottom:10px;">⚠ 本月额度即将用尽（91%）</div>
+      <div class="card card-warning-red" style="margin-bottom:12px;">
+        <div class="acc-top"><span class="acc-name">测试账号</span><span class="badge lite">Lite</span></div>
+        <div class="banner-red">⚠ 本月额度即将用尽</div>
+        <div class="rings">
+          <div class="ring-cell">
+            <div class="ring-label">5小时</div>
+            <div class="ring-row">
+              <svg viewBox="0 0 52 52" width="56" height="56">
+                <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+                <circle cx="26" cy="26" r="22" fill="none" stroke="#10b981" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="138.2" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+                <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#10b981">0%</text>
+              </svg>
+              <div class="reset"><span class="cd">5h 0m</span><span class="dt">7月25日 23:15</span></div>
+            </div>
+          </div>
+          <div class="ring-cell">
+            <div class="ring-label">本周</div>
+            <div class="ring-row">
+              <svg viewBox="0 0 52 52" width="56" height="56">
+                <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+                <circle cx="26" cy="26" r="22" fill="none" stroke="#10b981" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="127.2" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+                <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#10b981">8%</text>
+              </svg>
+              <div class="reset"><span class="cd">36h 0m</span><span class="dt">7月28日 09:00</span></div>
+            </div>
+          </div>
+          <div class="ring-cell">
+            <div class="ring-label">本月</div>
+            <div class="ring-row">
+              <svg viewBox="0 0 52 52" width="56" height="56">
+                <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+                <circle cx="26" cy="26" r="22" fill="none" stroke="#ef4444" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="12.4" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+                <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#ef4444" class="pulse-icon">91%</text>
+              </svg>
+              <div class="reset"><span class="cd">4d 12h</span><span class="dt">8月1日 00:00</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="acc-tokens">
+          <div class="acc-token"><span class="label">今日消耗</span><span class="val">8.2M</span></div>
+          <div class="acc-token"><span class="label">近30天</span><span class="val">95.3M</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="spec-anno">
+  <div>画板: 1000×700</div>
+  <div>Sidebar: 240 <span class="dim">|</span> Header: 56</div>
+  <div>内容区: 760×644 <span class="dim">(padding 16, gap 12)</span></div>
+</div>
+</body>
+</html>
