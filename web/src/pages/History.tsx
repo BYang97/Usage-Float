@@ -4,7 +4,7 @@ import { PageLayout } from '../components/PageLayout';
 import { TokenUsage } from '../components/TokenUsage';
 import { getUsageData, subscribe } from '../services/usage-service';
 import type { TokenInfo, UsageHistoryItem, Account } from '../types';
-import { Spinner } from '../components/Spinner';
+import { Skeleton } from '../components/Skeleton';
 import { t } from '../tokens';
 
 interface Props { onNavigate: (page: string) => void; onMinimize?: () => void; onClose?: () => void }
@@ -98,8 +98,9 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
     <PageLayout active="history" title="使用记录" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
 
       {loadState === 'loading' && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Spinner />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Skeleton variant="card" height={160} />
+          <Skeleton variant="card" height={200} />
         </div>
       )}
 
@@ -143,9 +144,10 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
             </div>
 
             {historyLoadState === 'loading' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-                <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.08)', borderTopColor: t.accentBlue, borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-                <span style={{ fontSize: t.fsSecondary, color: t.textTertiary }}>加载中…</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
+                <Skeleton height={14} width="60%" />
+                <Skeleton height={14} width="80%" />
+                <Skeleton height={14} width="45%" />
               </div>
             )}
             {historyLoadState === 'error' && (

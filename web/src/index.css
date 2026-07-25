@@ -80,8 +80,13 @@ body,
 }
 ::-webkit-scrollbar-track {
   background: transparent;
- * 共享动画
- * ============================================================ */
+/* ─── 骨架屏 shimmer 动画 ─── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ─── 旋转动画（保留） ─── */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -102,9 +107,10 @@ body,
     background: #ffffff;
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-card);
-    transition: box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
   .card:hover {
+    transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
   }
 

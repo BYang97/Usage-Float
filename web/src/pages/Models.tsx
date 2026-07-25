@@ -3,7 +3,7 @@ import { PageLayout } from '../components/PageLayout';
 import { ModelUsage } from '../components/ModelUsage';
 import { getUsageData, subscribe } from '../services/usage-service';
 import type { ModelUsageData } from '../types';
-import { Spinner } from '../components/Spinner';
+import { Skeleton } from '../components/Skeleton';
 import { t } from '../tokens';
 
 interface Props { onNavigate: (page: string) => void; onMinimize?: () => void; onClose?: () => void }
@@ -42,8 +42,8 @@ export function Models({ onNavigate, onMinimize, onClose }: Props) {
     <PageLayout active="models" title="模型统计" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
 
       {loadState === 'loading' && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Spinner />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Skeleton variant="card" height={200} />
         </div>
       )}
 

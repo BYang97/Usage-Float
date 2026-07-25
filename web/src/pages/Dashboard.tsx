@@ -6,12 +6,28 @@ import { TokenUsage } from '../components/TokenUsage';
 import { ModelUsage } from '../components/ModelUsage';
 import { getUsageData, subscribe, refreshAndNotify } from '../services/usage-service';
 import type { AccountInfo, QuotaInfo, TokenInfo, ModelUsageData } from '../types';
-import { Spinner } from '../components/Spinner';
+import { Skeleton } from '../components/Skeleton';
 import { t } from '../tokens';
 
 interface Props { onNavigate: (page: string) => void; onMinimize?: () => void; onClose?: () => void }
 
 type LoadState = 'loading' | 'loaded' | 'error';
+
+function DashboardSkeleton() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <Skeleton variant="card" height={80} />
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+        <Skeleton variant="card" height={200} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Skeleton variant="card" height={92} />
+          <Skeleton variant="card" height={92} />
+        </div>
+      </div>
+      <Skeleton variant="card" height={180} />
+    </div>
+  );
+}
 
 export function Dashboard({ onNavigate, onMinimize, onClose }: Props) {
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -64,9 +80,7 @@ export function Dashboard({ onNavigate, onMinimize, onClose }: Props) {
   if (loadState === 'loading') {
     return (
       <PageLayout active="dashboard" title="仪表盘" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Spinner />
-        </div>
+        <DashboardSkeleton />
       </PageLayout>
     );
   }
@@ -105,16 +119,23 @@ export function Dashboard({ onNavigate, onMinimize, onClose }: Props) {
     );
   }
 
-  // ─── 正常展示 ─────────────────────────────────────────────────
-  // ─── 正常展示 ─────────────────────────────────────────────────
+  // ─── 正常展示 — Bento Grid ────────────────────────────────────
   return (
     <PageLayout active="dashboard" title="仪表盘" onNavigate={onNavigate} onMinimize={onMinimize} onClose={onClose}>
+      {/* 订阅计划卡 */}
       <PlanCard plan={account.plan} status={account.status} expireDate={account.expireDate} />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+
+      {/* Bento Grid: 本月额度(大) + 5小时/本周(小) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+        {/* 本月额度 — 大卡，跨两行 */}
+        <QuotaCard title="本月额度" percentage={quota.monthlyPercent} />
+
+        {/* 右侧：5小时 + 本周 */}
         <QuotaCard title="5小时额度" percentage={quota.fiveHourPercent} resetTime={quota.fiveHourReset} />
         <QuotaCard title="本周额度" percentage={quota.weeklyPercent} resetTime={quota.weeklyReset} />
-        <QuotaCard title="本月额度" percentage={quota.monthlyPercent} />
       </div>
+
+      {/* Token 卡 + 图表卡并排 */}
       <div style={{ display: 'flex', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <TokenUsage data={tokens.tokenHistory} today={tokens.tokenToday} week={tokens.token7d} month={tokens.token30d} />
