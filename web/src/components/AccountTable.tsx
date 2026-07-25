@@ -100,7 +100,10 @@ export function AccountTable() {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
-        <span style={{ fontSize: 13, color: t.textTertiary }}>加载中…</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.08)', borderTopColor: t.accentBlue, borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: t.textTertiary }}>加载中…</span>
+        </div>
       </div>
     );
   }
