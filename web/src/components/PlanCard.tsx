@@ -13,7 +13,7 @@ export function PlanCard({ plan, status, expireDate }: Props) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 16, fontWeight: 600, color: t.textPrimary }}>{plan}</span>
       </div>
-      {expireDate && expireDate !== '—' && (
+      {expireDate && expireDate !== '—' && expireDate !== '-' && (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 11, color: t.textTertiary }}>到期时间</span>
         <span style={{ fontSize: 14, fontWeight: 500, color: t.textPrimary }}>{expireDate}</span>

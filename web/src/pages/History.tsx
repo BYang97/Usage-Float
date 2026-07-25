@@ -94,7 +94,7 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
               {errorMsg || '无法获取使用记录数据'}
             </span>
             <button
-              onClick={() => { loadData(); loadHistory(); }}
+              onClick={() => loadData()}
               style={{
                 marginTop: 4, padding: '8px 20px', borderRadius: 6,
                 border: 'none', background: t.accentBlue, color: '#fff',

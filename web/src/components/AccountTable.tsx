@@ -12,6 +12,7 @@ export function AccountTable() {
   const [items, setItems] = useState<AccountWithUsage[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState<Set<string>>(new Set());
+  const [accountErrors, setAccountErrors] = useState<Record<string, string>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
 
@@ -41,8 +42,12 @@ export function AccountTable() {
       setItems(prev => prev.map(i =>
         i.account.id === accountId ? { ...i, usage } : i
       ));
+      // clear error on success
+      setAccountErrors(prev => { const n = { ...prev }; delete n[accountId]; return n; });
     } catch (err) {
       log.error(`refresh_one ${accountId} failed:`, err);
+      const msg = err instanceof Error ? err.message : '刷新失败';
+      setAccountErrors(prev => ({ ...prev, [accountId]: msg }));
     } finally {
       setRefreshing(prev => {
         const next = new Set(prev);
@@ -186,6 +191,13 @@ export function AccountTable() {
             ) : (
               <div style={{ fontSize: 12, color: t.textTertiary, padding: '8px 0' }}>
                 {isRefreshing ? '正在获取配额…' : '点击刷新获取配额数据'}
+              </div>
+            )}
+            {/* Error state */}
+            {accountErrors[account.id] && (
+              <div style={{ fontSize: 12, color: t.statusDanger, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>&#9888;</span>
+                <span>{accountErrors[account.id]}</span>
               </div>
             )}
 

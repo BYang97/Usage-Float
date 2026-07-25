@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { FloatWidget } from './FloatWidget';
-import { getQuota, subscribe, startAutoRefresh, stopAutoRefresh } from '../services/usage-service';
+import { getQuota, subscribe } from '../services/usage-service';
 import type { QuotaInfo } from '../types';
 
 /**
@@ -46,13 +46,9 @@ export function FloatWindow() {
       }
     });
 
-    // 启动定时刷新（5 分钟）
-    startAutoRefresh(5 * 60 * 1000);
 
     return () => {
-      cancelled = true;
       unsub();
-      stopAutoRefresh();
     };
   }, []);
 
