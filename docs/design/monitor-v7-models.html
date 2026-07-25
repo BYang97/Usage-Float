@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Usage Float v7 · 模型统计</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,sans-serif; }
+body { background:#f8f9fa; padding:24px; display:flex; justify-content:center; }
+.panel { width:600px; }
+.header { display:flex; align-items:baseline; gap:12px; margin-bottom:20px; }
+.header h1 { font-size:20px; font-weight:700; color:#1a1d21; }
+.header .sub { font-size:11px; color:#6b7280; }
+.card { background:#fff; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02); transition:all .2s; }
+.card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.06); transform:translateY(-1px); }
+.section-title { font-size:13px; font-weight:600; color:#6b7280; margin:16px 0 8px; }
+.model-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.model-row:last-child { margin-bottom:0; }
+.model-name { font-size:11px; color:#1a1d21; width:140px; }
+.bar-bg { flex:1; height:6px; background:#e9ecef; border-radius:3px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:3px; }
+.bar-stripe { background:repeating-linear-gradient(45deg,#f59e0b,#f59e0b 4px,#fbbf24 4px,#fbbf24 8px); }
+.model-pct { font-size:11px; font-weight:600; color:#6b7280; width:40px; text-align:right; }
+.model-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.model-grid .card { margin-bottom:0; }
+.mc-name { font-size:14px; font-weight:600; color:#1a1d21; margin-bottom:6px; }
+.mc-calls { font-size:20px; font-weight:700; color:#1a1d21; margin-bottom:2px; }
+.mc-tokens { font-size:11px; color:#6b7280; margin-bottom:2px; }
+.mc-fee { font-size:11px; color:#6366f1; }
+.empty-state { text-align:center; padding:40px 20px; }
+.empty-icon { width:64px; height:64px; background:#f1f3f5; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+.empty-icon svg { display:block; }
+.empty-title { font-size:16px; font-weight:600; color:#1a1d21; margin-bottom:6px; }
+.empty-desc { font-size:13px; color:#6b7280; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="header"><h1>模型统计</h1><span class="sub">近30天 · 模型分布</span></div>
+
+  <div class="section-title">模型使用</div>
+  <div class="card">
+    <div class="model-row">
+      <span class="model-name">deepseek-v4-flash</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:32.8%;background:#6366f1"></div></div>
+      <span class="model-pct">32.8%</span>
+    </div>
+    <div class="model-row">
+      <span class="model-name">未识别</span>
+      <div class="bar-bg"><div class="bar-fill bar-stripe" style="width:66.7%;"></div></div>
+      <span class="model-pct">66.7%</span>
+    </div>
+    <div class="model-row">
+      <span class="model-name">gpt-5.5</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:0.4%;background:#10b981;min-width:4px"></div></div>
+      <span class="model-pct">0.4%</span>
+    </div>
+  </div>
+
+  <div class="section-title">模型卡片</div>
+  <div class="model-grid">
+    <div class="card">
+      <div class="mc-name">deepseek-v4-flash</div>
+      <div class="mc-calls">1,234</div>
+      <div class="mc-tokens">89.2M tokens</div>
+      <div class="mc-fee">$12.34</div>
+    </div>
+    <div class="card">
+      <div class="mc-name">gpt-5.5</div>
+      <div class="mc-calls">456</div>
+      <div class="mc-tokens">12.3M tokens</div>
+      <div class="mc-fee">$45.67</div>
+    </div>
+    <div class="card">
+      <div class="mc-name">未识别</div>
+      <div class="mc-calls">2,567</div>
+      <div class="mc-tokens">156.7M tokens</div>
+      <div class="mc-fee">$8.90</div>
+    </div>
+  </div>
+
+  <!-- 空状态示例（注释说明，实际使用时替换上方内容） -->
+  <!--
+  <div class="section-title">模型使用</div>
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </div>
+      <div class="empty-title">暂无模型数据</div>
+      <div class="empty-desc">连接 API 并开始使用后，模型用量将自动显示在此处</div>
+    </div>
+  </div>
+  -->
+</div>
+</body>
+</html>

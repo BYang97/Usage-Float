@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Usage Float v7 · 仪表盘</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,sans-serif; }
+  body { background:#f8f9fa; padding:24px; display:flex; justify-content:center; }
+  .panel { width:600px; }
+  .header { display:flex; align-items:baseline; gap:12px; margin-bottom:20px; }
+  .header h1 { font-size:20px; font-weight:700; color:#1a1d21; }
+  .header .sub { font-size:11px; color:#6b7280; }
+  .card { background:#fff; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02); transition:all .2s; }
+  .card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.06); transform:translateY(-1px); }
+  .card-warning-yellow { border-left:3px solid #f59e0b; }
+  .card-warning-red { border-left:3px solid #ef4444; background:linear-gradient(to right,rgba(239,68,68,0.06),#fff); }
+  .card-error { border:1px solid #ef4444; }
+  .acc-top { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .acc-name { font-size:14px; font-weight:600; color:#1a1d21; }
+  .badge { color:#fff; font-size:10px; font-weight:600; padding:2px 8px; border-radius:9px; }
+  .badge.lite { background:linear-gradient(135deg,#6366f1,#8b5cf6); }
+  .badge.go { background:linear-gradient(135deg,#10b981,#06b6d4); }
+  .badge.error { background:#ef4444; }
+  .banner { font-size:11px; font-weight:600; color:#ef4444; background:rgba(239,68,68,0.08); padding:4px 10px; border-radius:6px; margin-bottom:10px; display:inline-block; }
+  .rings { display:flex; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .ring-cell { flex:1; display:flex; flex-direction:column; gap:6px; }
+  .ring-label { font-size:11px; font-weight:600; color:#6b7280; }
+  .ring-row { display:flex; align-items:center; gap:8px; }
+  .reset .cd { display:block; font-size:11px; font-weight:600; color:#6b7280; }
+  .reset .dt { display:block; font-size:10px; color:#9ca3af; margin-top:1px; }
+  .acc-tokens { display:flex; gap:16px; padding-top:10px; border-top:1px solid #f1f3f5; }
+  .acc-token .label { font-size:10px; color:#6b7280; display:block; }
+  .acc-token .val { font-size:13px; font-weight:600; color:#1a1d21; }
+  .section-title { font-size:13px; font-weight:600; color:#6b7280; margin:16px 0 8px; }
+  .token-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  .token .label { font-size:10px; color:#6b7280; display:block; }
+  .token .val { font-size:20px; font-weight:700; color:#1a1d21; }
+  .token.accent .val { color:#6366f1; }
+  .model-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .model-name { font-size:11px; color:#1a1d21; width:140px; }
+  .bar-bg { flex:1; height:6px; background:#e9ecef; border-radius:3px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:3px; }
+  .model-pct { font-size:11px; font-weight:600; color:#6b7280; width:40px; text-align:right; }
+  .model-link { font-size:11px; font-weight:500; color:#6366f1; background:none; border:none; cursor:pointer; margin-top:8px; display:inline-block; }
+  .model-link:hover { text-decoration:underline; }
+  .reauth-btn { font-size:10px; font-weight:500; color:#ef4444; background:transparent; border:1px solid #ef4444; border-radius:12px; padding:2px 10px; cursor:pointer; }
+  .reauth-btn:hover { background:#fef2f2; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+  .pulse-ring { animation:pulse 1.8s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="header"><h1>Usage Float</h1><span class="sub">4 个账号 · 实时监控</span></div>
+
+  <!-- 账号 1: 默认 - 88% 黄色预警 -->
+  <div class="card card-warning-yellow">
+    <div class="acc-top"><span class="acc-name">默认</span><span class="badge lite">Lite</span></div>
+    <div class="rings">
+      <div class="ring-cell">
+      <div class="ring-label">5小时</div>
+      <div class="ring-row"><svg viewBox="0 0 52 52" width="56" height="56">
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#10b981" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="136.8" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+      <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#10b981">1%</text>
+    </svg><div class="reset"><span class="cd">4h 3m</span><span class="dt">7月25日 23:15</span></div></div>
+    </div>
+      <div class="ring-cell">
+      <div class="ring-label">本周</div>
+      <div class="ring-row"><svg viewBox="0 0 52 52" width="56" height="56">
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#10b981" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="134.1" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+      <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#10b981">3%</text>
+    </svg><div class="reset"><span class="cd">37h 30m</span><span class="dt">7月28日 09:00</span></div></div>
+    </div>
+      <div class="ring-cell">
+      <div class="ring-label">本月</div>
+      <div class="ring-row"><svg viewBox="0 0 52 52" width="56" height="56">
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#ef4444" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="16.6" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+      <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#ef4444">88%</text>
+    </svg><div class="reset"><span class="cd">4d 12h</span><span class="dt">8月1日 00:00</span></div></div>
+    </div>
+    </div>
+    <div class="acc-tokens">
+      <div class="acc-token"><span class="label">今日消耗</span><span class="val">12.4M</span></div>
+      <div class="acc-token"><span class="label">近30天</span><span class="val">88.1M</span></div>
+    </div>
+  </div>
+
+  <!-- 账号 2: 测试账号 - 91% 红色预警 -->
+  <div class="card card-warning-red">
+    <div class="acc-top"><span class="acc-name">测试账号</span><span class="badge lite">Lite</span></div>
+    <div class="banner">⚠ 本月额度即将用尽</div>
+    <div class="rings">
+      <div class="ring-cell">
+      <div class="ring-label">5小时</div>
+      <div class="ring-row"><svg viewBox="0 0 52 52" width="56" height="56">
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#10b981" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="138.2" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+      <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#10b981">0%</text>
+    </svg><div class="reset"><span class="cd">5h 0m</span><span class="dt">7月25日 23:15</span></div></div>
+    </div>
+      <div class="ring-cell">
+      <div class="ring-label">本周</div>
+      <div class="ring-row"><svg viewBox="0 0 52 52" width="56" height="56">
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#10b981" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="127.2" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+      <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#10b981">8%</text>
+    </svg><div class="reset"><span class="cd">36h 0m</span><span class="dt">7月28日 09:00</span></div></div>
+    </div>
+      <div class="ring-cell">
+      <div class="ring-label">本月</div>
+      <div class="ring-row"><svg viewBox="0 0 52 52" width="56" height="56">
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#ef4444" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="12.4" transform="rotate(-90 26 26)" stroke-linecap="round" class="pulse-ring" style="animation:pulse 1.8s ease-in-out infinite"/>
+      <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#ef4444">91%</text>
+    </svg><div class="reset"><span class="cd">4d 12h</span><span class="dt">8月1日 00:00</span></div></div>
+    </div>
+    </div>
+    <div class="acc-tokens">
+      <div class="acc-token"><span class="label">今日消耗</span><span class="val">8.2M</span></div>
+      <div class="acc-token"><span class="label">近30天</span><span class="val">95.3M</span></div>
+    </div>
+  </div>
+
+  <!-- 账号 3: 团队号 - 67% 正常 -->
+  <div class="card">
+    <div class="acc-top"><span class="acc-name">团队号</span><span class="badge go">Go</span></div>
+    <div class="rings">
+      <div class="ring-cell">
+      <div class="ring-label">5小时</div>
+      <div class="ring-row"><svg viewBox="0 0 52 52" width="56" height="56">
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#10b981" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="121.6" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+      <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#10b981">12%</text>
+    </svg><div class="reset"><span class="cd">3h 11m</span><span class="dt">7月25日 22:30</span></div></div>
+    </div>
+      <div class="ring-cell">
+      <div class="ring-label">本周</div>
+      <div class="ring-row"><svg viewBox="0 0 52 52" width="56" height="56">
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#10b981" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="76.0" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+      <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#10b981">45%</text>
+    </svg><div class="reset"><span class="cd">2d 14h</span><span class="dt">7月27日 09:00</span></div></div>
+    </div>
+      <div class="ring-cell">
+      <div class="ring-label">本月</div>
+      <div class="ring-row"><svg viewBox="0 0 52 52" width="56" height="56">
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#e9ecef" stroke-width="4"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="#f59e0b" stroke-width="4" stroke-dasharray="138.2" stroke-dashoffset="45.6" transform="rotate(-90 26 26)" stroke-linecap="round"/>
+      <text x="26" y="31" text-anchor="middle" font-size="13" font-weight="700" fill="#f59e0b">67%</text>
+    </svg><div class="reset"><span class="cd">4d 12h</span><span class="dt">8月1日 00:00</span></div></div>
+    </div>
+    </div>
+    <div class="acc-tokens">
+      <div class="acc-token"><span class="label">今日消耗</span><span class="val">45.1M</span></div>
+      <div class="acc-token"><span class="label">近30天</span><span class="val">312.8M</span></div>
+    </div>
+  </div>
+
+  <!-- 账号 4: 已失效 -->
+  <div class="card card-error">
+    <div class="acc-top"><span class="acc-name">旧工作账号</span><span class="badge error">失效</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+      <span style="font-size:12px;color:#6b7280;">API 密钥已过期 · 最后一次同步 7月20日</span>
+      <button class="reauth-btn">重新授权</button>
+    </div>
+  </div>
+
+  <div class="section-title">Token 消耗（汇总）</div>
+  <div class="card"><div class="token-grid">
+    <div class="token"><span class="label">今日</span><span class="val">65.7M</span></div>
+    <div class="token accent"><span class="label">近7天</span><span class="val">104.9M</span></div>
+    <div class="token"><span class="label">近30天</span><span class="val">496.2M</span></div>
+  </div></div>
+
+  <div class="section-title">最近使用模型</div>
+  <div class="card">
+    <div class="model-row"><span class="model-name">deepseek-v4-flash</span><div class="bar-bg"><div class="bar-fill" style="width:32.8%;background:#6366f1"></div></div><span class="model-pct">32.8%</span></div>
+    <div class="model-row"><span class="model-name">gpt-5.5</span><div class="bar-bg"><div class="bar-fill" style="width:4%;background:#10b981"></div></div><span class="model-pct">0.4%</span></div>
+    <div style="text-align:right;margin-top:8px;"><span class="model-link">查看全部 &gt;</span></div>
+  </div>
+</div>
+</body>
+</html>

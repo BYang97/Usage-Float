@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Usage Float v7 · 悬浮窗</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,sans-serif; }
+body { background:#f8f9fa; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+.float-widget { width:320px; border-radius:20px; background:rgba(255,255,255,0.8); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); box-shadow:0 12px 40px rgba(0,0,0,0.12),0 4px 12px rgba(0,0,0,0.06); overflow:hidden; position:relative; display:flex; flex-direction:column; align-items:center; }
+.drag-handle { width:40px; height:4px; border-radius:2px; background:rgba(0,0,0,0.12); margin:10px auto 6px; cursor:grab; flex-shrink:0; }
+.provider-badge { color:#fff; font-size:10px; font-weight:600; padding:2px 8px; border-radius:9px; background:linear-gradient(135deg,#6366f1,#8b5cf6); align-self:flex-start; margin-left:14px; }
+.close-btn { position:absolute; top:12px; right:12px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; cursor:pointer; font-size:14px; color:#6b7280; border-radius:8px; }
+.close-btn:hover { background:rgba(0,0,0,0.06); }
+.min-btn { position:absolute; top:12px; right:48px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; cursor:pointer; font-size:14px; color:#6b7280; border-radius:8px; padding-bottom:2px; }
+.min-btn:hover { background:rgba(0,0,0,0.06); }
+.ring-area { display:flex; flex-direction:column; align-items:center; gap:4px; margin-top:8px; }
+.ring-text { font-size:16px; font-weight:700; fill:#10b981; }
+.info-row { display:flex; align-items:center; gap:6px; font-size:13px; margin-top:8px; }
+.info-label { font-weight:500; color:#6b7280; }
+.dot { width:3px; height:3px; border-radius:50%; background:#d1d5db; }
+.reset-label { font-size:13px; color:#6b7280; }
+.reset-time { font-size:13px; color:#6b7280; }
+.acc-switch { display:flex; align-items:center; gap:6px; font-size:12px; color:#6b7280; margin-top:8px; padding:4px 10px; border-radius:6px; cursor:pointer; }
+.acc-switch:hover { background:rgba(0,0,0,0.04); }
+.acc-switch .arrow { font-size:8px; color:#9ca3af; }
+.dash-btn { font-size:12px; font-weight:500; color:#6366f1; background:transparent; border:none; cursor:pointer; padding:8px 8px 10px; border-radius:6px; }
+.dash-btn:hover { background:rgba(99,102,241,0.08); }
+</style>
+</head>
+<body>
+
+<div class="float-widget">
+  <div class="drag-handle"></div>
+  <span class="provider-badge">Claude</span>
+  <button class="close-btn">&times;</button>
+  <button class="min-btn">&mdash;</button>
+
+  <div class="ring-area">
+    <svg viewBox="0 0 80 80" width="80" height="80">
+      <circle cx="40" cy="40" r="34" fill="none" stroke="#e9ecef" stroke-width="6"/>
+      <circle cx="40" cy="40" r="34" fill="none" stroke="#10b981" stroke-width="6"
+        stroke-dasharray="213.6" stroke-dashoffset="188.0"
+        transform="rotate(-90 40 40)" stroke-linecap="round"/>
+      <text x="40" y="46" text-anchor="middle" font-size="16" font-weight="700" fill="#10b981">12%</text>
+    </svg>
+  </div>
+
+  <div class="info-row">
+    <span class="info-label">5小时额度</span>
+    <span class="dot"></span>
+    <span class="reset-label">重置</span>
+    <span class="reset-time">4h 3m</span>
+  </div>
+
+  <div class="acc-switch">
+    <span>默认账号 (ws-abc123)</span>
+    <span class="arrow">▼</span>
+  </div>
+
+  <button class="dash-btn">打开仪表盘 &gt;</button>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Usage Float v7 · 使用记录</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,sans-serif; }
+body { background:#f8f9fa; padding:24px; display:flex; justify-content:center; }
+.panel { width:600px; }
+.header { display:flex; align-items:baseline; gap:12px; margin-bottom:20px; }
+.header h1 { font-size:20px; font-weight:700; color:#1a1d21; }
+.header .sub { font-size:11px; color:#6b7280; }
+.card { background:#fff; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02); transition:all .2s; }
+.card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.06); transform:translateY(-1px); }
+.section-title { font-size:13px; font-weight:600; color:#6b7280; margin:16px 0 8px; }
+.token-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.token .label { font-size:10px; color:#6b7280; display:block; margin-bottom:2px; }
+.token .val { font-size:20px; font-weight:700; color:#1a1d21; }
+.token.accent .val { color:#6366f1; }
+.table-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
+.table-header .title { font-size:13px; font-weight:600; color:#1a1d21; }
+.table-header select { background:#fff; border:1px solid #e9ecef; border-radius:4px; padding:4px 8px; font-size:12px; color:#1a1d21; cursor:pointer; outline:none; }
+.table-header select:focus { border-color:#6366f1; }
+.chip-group { display:flex; gap:4px; }
+.chip-date { font-size:11px; font-weight:500; color:#6b7280; background:#f1f3f5; border-radius:12px; padding:4px 12px; cursor:pointer; transition:all .15s; }
+.chip-date:hover { background:#e9ecef; }
+.chip-date.active { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; }
+table { width:100%; border-collapse:collapse; }
+th { font-size:11px; font-weight:500; color:#6b7280; padding:8px 6px; text-align:left; border-bottom:1px solid #e9ecef; white-space:nowrap; }
+th .sort { display:inline-flex; flex-direction:column; vertical-align:middle; margin-left:4px; line-height:1; }
+th .sort .arrow-up, th .sort .arrow-down { display:block; font-size:8px; color:#d1d5db; line-height:1; }
+th:hover .sort .arrow-up, th:hover .sort .arrow-down { color:#6b7280; }
+td { font-size:13px; color:#1a1d21; padding:8px 6px; border-bottom:1px solid #f1f3f5; }
+tr:hover td { background:#f8f9fa; }
+th.num, td.num { text-align:right; }
+td.num { font-variant-numeric:tabular-nums; }
+td.time { color:#6b7280; white-space:nowrap; }
+.load-more { display:flex; justify-content:center; padding:12px 0 4px; }
+.load-more button { background:#fff; border:1px solid #e9ecef; border-radius:12px; padding:6px 20px; font-size:12px; color:#6b7280; cursor:pointer; transition:all .15s; }
+.load-more button:hover { border-color:#6366f1; color:#6366f1; background:#f5f3ff; }
+
+/* Empty state */
+.empty-state { text-align:center; padding:40px 20px; }
+.empty-icon { width:72px; height:72px; background:#f1f3f5; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+.empty-title { font-size:16px; font-weight:600; color:#1a1d21; margin-bottom:6px; }
+.empty-desc { font-size:13px; color:#6b7280; line-height:1.5; }
+
+/* Skeleton */
+@keyframes shimmer { 0%{background-position:-200px 0} 100%{background-position:calc(200px + 100%) 0} }
+.skeleton { background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:4px; }
+.skeleton-row { display:flex; align-items:center; gap:12px; padding:10px 0; }
+.skeleton-cell { height:12px; background:#f1f3f5; background-image:linear-gradient(90deg,#f1f3f5 25%,#f8f9fa 50%,#f1f3f5 75%); background-size:200px 100%; animation:shimmer 1.5s ease-in-out infinite; border-radius:4px; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="header"><h1>使用记录</h1><span class="sub">3 个账号 · 用量明细</span></div>
+
+  <div class="section-title">Token 消耗汇总</div>
+  <div class="card"><div class="token-grid">
+    <div class="token"><span class="label">今日</span><span class="val">65.7M</span></div>
+    <div class="token accent"><span class="label">近7天</span><span class="val">104.9M</span></div>
+    <div class="token"><span class="label">近30天</span><span class="val">496.2M</span></div>
+  </div></div>
+
+  <div class="section-title">用量历史</div>
+  <div class="card">
+    <div class="table-header">
+      <div class="chip-group">
+        <span class="chip-date">今日</span>
+        <span class="chip-date active">7天</span>
+        <span class="chip-date">30天</span>
+      </div>
+      <select>
+        <option>全部账号</option>
+        <option>默认</option>
+        <option>测试账号</option>
+        <option>团队号</option>
+      </select>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>时间 <span class="sort"><span class="arrow-up">▲</span><span class="arrow-down">▼</span></span></th>
+          <th>模型</th>
+          <th>Provider</th>
+          <th class="num">Input</th>
+          <th class="num">Output</th>
+          <th class="num">Reasoning</th>
+          <th class="num">Cache</th>
+          <th class="num">费用 <span class="sort"><span class="arrow-up">▲</span><span class="arrow-down">▼</span></span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="time">2026-07-25 14:32</td>
+          <td>deepseek-v4-flash</td>
+          <td>qoderclicn</td>
+          <td class="num">1,234</td>
+          <td class="num">5,678</td>
+          <td class="num">890</td>
+          <td class="num">123</td>
+          <td class="num">$0.0123</td>
+        </tr>
+        <tr>
+          <td class="time">2026-07-25 13:15</td>
+          <td>gpt-5.5</td>
+          <td>openai</td>
+          <td class="num">456</td>
+          <td class="num">1,234</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">$0.0456</td>
+        </tr>
+        <tr>
+          <td class="time">2026-07-25 11:40</td>
+          <td>未识别</td>
+          <td>unknown</td>
+          <td class="num">789</td>
+          <td class="num">2,345</td>
+          <td class="num">—</td>
+          <td class="num">56</td>
+          <td class="num">$0.0089</td>
+        </tr>
+        <tr>
+          <td class="time">2026-07-24 22:10</td>
+          <td>deepseek-v4-flash</td>
+          <td>qoderclicn</td>
+          <td class="num">2,345</td>
+          <td class="num">8,901</td>
+          <td class="num">1,234</td>
+          <td class="num">456</td>
+          <td class="num">$0.0234</td>
+        </tr>
+        <tr>
+          <td class="time">2026-07-24 18:55</td>
+          <td>gpt-5.5</td>
+          <td>openai</td>
+          <td class="num">678</td>
+          <td class="num">3,456</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">$0.0789</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="load-more"><button>加载更多</button></div>
+  </div>
+
+  <!-- 骨架屏示例（注释，替换上方表格展示） -->
+  <!--
+  <div class="card">
+    <div class="table-header"><span class="title">用量历史</span></div>
+    <div class="skeleton-row"><div class="skeleton-cell" style="width:140px;height:12px"></div><div class="skeleton-cell" style="width:100px;height:12px"></div><div class="skeleton-cell" style="width:60px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div></div>
+    <div class="skeleton-row"><div class="skeleton-cell" style="width:120px;height:12px"></div><div class="skeleton-cell" style="width:110px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div><div class="skeleton-cell" style="width:60px;height:12px"></div><div class="skeleton-cell" style="width:40px;height:12px"></div></div>
+    <div class="skeleton-row"><div class="skeleton-cell" style="width:130px;height:12px"></div><div class="skeleton-cell" style="width:90px;height:12px"></div><div class="skeleton-cell" style="width:70px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div><div class="skeleton-cell" style="width:50px;height:12px"></div></div>
+    <div class="load-more" style="margin-top:8px"><button>加载更多</button></div>
+  </div>
+  -->
+
+  <!-- 空状态示例（注释，替换上方表格展示） -->
+  <!--
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </div>
+      <div class="empty-title">暂无用量历史</div>
+      <div class="empty-desc">开始使用 API 后，每次调用的详细记录将展示在此处</div>
+    </div>
+  </div>
+  -->
+</div>
+</body>
+</html>

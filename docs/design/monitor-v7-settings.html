@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Usage Float v7 · 设置</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Inter,-apple-system,sans-serif; }
+body { background:#f8f9fa; padding:24px; display:flex; justify-content:center; }
+.panel { width:600px; }
+.header { display:flex; align-items:baseline; gap:12px; margin-bottom:20px; }
+.header h1 { font-size:20px; font-weight:700; color:#1a1d21; }
+.header .sub { font-size:11px; color:#6b7280; }
+.card { background:#fff; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02); transition:all .2s; }
+.card-inner { max-width:480px; margin:0 auto; }
+.card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.06); transform:translateY(-1px); }
+.section-title { font-size:13px; font-weight:600; color:#6b7280; margin:16px 0 0; padding-bottom:8px; }
+.divider { height:1px; background:#e9ecef; margin:12px 0; }
+.setting-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; }
+.setting-label { font-size:13px; color:#1a1d21; }
+.setting-right { display:flex; align-items:center; gap:8px; }
+.toggle { width:36px; height:20px; border-radius:10px; background:#e9ecef; opacity:0.4; position:relative; cursor:not-allowed; flex-shrink:0; }
+.toggle::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.1); }
+.chip-pending { font-size:10px; color:#6b7280; background:#f1f3f5; border-radius:3px; padding:2px 6px; white-space:nowrap; }
+.chip-group { display:flex; gap:6px; }
+.chip-opt { height:28px; border-radius:12px; background:#f1f3f5; padding:0 14px; font-size:12px; color:#6b7280; display:flex; align-items:center; cursor:pointer; transition:all .15s; border:none; }
+.chip-opt:hover { background:#e9ecef; }
+.chip-opt.active { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; }
+.theme-picker { height:28px; border-radius:12px; background:#f1f3f5; padding:0 14px; font-size:12px; color:#6b7280; display:flex; align-items:center; gap:6px; cursor:pointer; border:none; transition:all .15s; }
+.theme-picker:hover { background:#e9ecef; }
+.theme-picker.active { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; }
+.privacy-row { display:flex; align-items:flex-start; gap:10px; padding:8px 0; }
+.privacy-icon { width:14px; height:16px; flex-shrink:0; margin-top:2px; }
+.privacy-icon svg { display:block; }
+.privacy-text { font-size:13px; color:#6b7280; line-height:1.5; }
+table { width:100%; border-collapse:collapse; }
+th { font-size:11px; font-weight:500; color:#6b7280; padding:8px 6px; text-align:left; border-bottom:1px solid #e9ecef; white-space:nowrap; }
+td { font-size:13px; color:#1a1d21; padding:8px 6px; border-bottom:1px solid #f1f3f5; }
+tr:hover td { background:#f8f9fa; }
+.badge { color:#fff; font-size:10px; font-weight:600; padding:2px 8px; border-radius:9px; display:inline-block; }
+.badge.lite { background:linear-gradient(135deg,#6366f1,#8b5cf6); }
+.badge.go { background:linear-gradient(135deg,#10b981,#06b6d4); }
+.btn-accent { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border:none; border-radius:12px; padding:8px 16px; font-size:13px; font-weight:500; cursor:pointer; transition:opacity .15s; }
+.btn-accent:hover { opacity:0.9; }
+.btn-text { font-size:11px; background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px; }
+.btn-text.edit { color:#6366f1; }
+.btn-text.edit:hover { background:rgba(99,102,241,0.08); }
+.btn-text.delete { color:#ef4444; }
+.btn-text.delete:hover { background:rgba(239,68,68,0.08); }
+.action-cell { display:flex; gap:4px; }
+.add-row { display:flex; justify-content:center; padding:12px 0 4px; }
+
+/* Popover */
+.popover-wrap { position:relative; display:inline-block; }
+.popover { display:none; position:absolute; bottom:calc(100% + 6px); right:0; background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12),0 2px 6px rgba(0,0,0,0.06); padding:12px 16px; z-index:10; min-width:160px; }
+.popover.show { display:block; }
+.popover-title { font-size:13px; font-weight:600; color:#1a1d21; margin-bottom:10px; }
+.popover-actions { display:flex; gap:8px; justify-content:flex-end; }
+.popover-btn { font-size:12px; border:none; border-radius:12px; padding:6px 16px; cursor:pointer; font-weight:500; transition:opacity .15s; }
+.popover-btn.cancel { background:#f1f3f5; color:#6b7280; }
+.popover-btn.cancel:hover { background:#e9ecef; }
+.popover-btn.confirm { background:#ef4444; color:#fff; }
+.popover-btn.confirm:hover { opacity:0.9; }
+
+/* Modal overlay */
+.modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.3); z-index:100; align-items:center; justify-content:center; }
+.modal-overlay.show { display:flex; }
+.modal { background:#fff; border-radius:16px; padding:20px; width:340px; box-shadow:0 16px 48px rgba(0,0,0,0.16); }
+.modal-title { font-size:16px; font-weight:600; color:#1a1d21; margin-bottom:16px; }
+.modal-field { margin-bottom:12px; }
+.modal-label { font-size:12px; font-weight:500; color:#6b7280; display:block; margin-bottom:4px; }
+.modal-input { width:100%; padding:8px 12px; border:1px solid #e9ecef; border-radius:8px; font-size:13px; color:#1a1d21; outline:none; }
+.modal-input:focus { border-color:#6366f1; }
+.modal-display { font-size:13px; color:#6b7280; padding:8px 0; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="header"><h1>设置</h1><span class="sub">通用 · 外观 · 隐私 · 账号</span></div>
+
+  <div class="card">
+    <div class="card-inner">
+
+      <div class="section-title">通用设置</div>
+      <div class="setting-row">
+        <span class="setting-label">开机自动启动</span>
+        <div class="setting-right">
+          <span class="toggle"></span>
+          <span class="chip-pending">即将支持</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">刷新频率</span>
+        <div class="setting-right">
+          <div class="chip-group">
+            <span class="chip-opt">5分钟</span>
+            <span class="chip-opt active">30分钟</span>
+            <span class="chip-opt">60分钟</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="section-title">外观设置</div>
+      <div class="setting-row">
+        <span class="setting-label">悬浮球</span>
+        <div class="setting-right">
+          <span class="toggle"></span>
+          <span class="chip-pending">即将支持</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">主题</span>
+        <div class="setting-right">
+          <div class="chip-group">
+            <span class="theme-picker active">浅色</span>
+            <span class="theme-picker">跟随系统</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="section-title">隐私设置</div>
+      <div class="privacy-row">
+        <div class="privacy-icon">
+          <svg viewBox="0 0 14 16" width="14" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="6" width="10" height="10" rx="2" fill="#6b7280"/>
+            <path d="M4 6V4a3 3 0 1 1 6 0v2" stroke="#6b7280" stroke-width="1.5"/>
+            <circle cx="7" cy="10" r="1.5" fill="#fff"/>
+          </svg>
+        </div>
+        <span class="privacy-text">数据仅保存在本机 · 不上传用户数据</span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="section-title">账号管理</div>
+      <table>
+        <thead>
+          <tr>
+            <th>账号名</th>
+            <th>Workspace</th>
+            <th>Plan</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>默认</td>
+            <td><code style="font-size:12px;color:#6b7280;">ws-abc123</code></td>
+            <td><span class="badge lite">Lite</span></td>
+            <td class="action-cell">
+              <button class="btn-text edit" onclick="document.getElementById('editModal').classList.add('show')">编辑</button>
+              <div class="popover-wrap">
+                <button class="btn-text delete" onclick="this.nextElementSibling.classList.toggle('show')">删除</button>
+                <div class="popover">
+                  <div class="popover-title">确认删除？</div>
+                  <div class="popover-actions">
+                    <button class="popover-btn cancel" onclick="this.parentElement.parentElement.classList.remove('show')">取消</button>
+                    <button class="popover-btn confirm">确认</button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>测试账号</td>
+            <td><code style="font-size:12px;color:#6b7280;">ws-def456</code></td>
+            <td><span class="badge lite">Lite</span></td>
+            <td class="action-cell">
+              <button class="btn-text edit" onclick="document.getElementById('editModal').classList.add('show')">编辑</button>
+              <div class="popover-wrap">
+                <button class="btn-text delete" onclick="this.nextElementSibling.classList.toggle('show')">删除</button>
+                <div class="popover">
+                  <div class="popover-title">确认删除？</div>
+                  <div class="popover-actions">
+                    <button class="popover-btn cancel" onclick="this.parentElement.parentElement.classList.remove('show')">取消</button>
+                    <button class="popover-btn confirm">确认</button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>团队号</td>
+            <td><code style="font-size:12px;color:#6b7280;">ws-ghi789</code></td>
+            <td><span class="badge go">Go</span></td>
+            <td class="action-cell">
+              <button class="btn-text edit" onclick="document.getElementById('editModal').classList.add('show')">编辑</button>
+              <div class="popover-wrap">
+                <button class="btn-text delete" onclick="this.nextElementSibling.classList.toggle('show')">删除</button>
+                <div class="popover">
+                  <div class="popover-title">确认删除？</div>
+                  <div class="popover-actions">
+                    <button class="popover-btn cancel" onclick="this.parentElement.parentElement.classList.remove('show')">取消</button>
+                    <button class="popover-btn confirm">确认</button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="add-row"><button class="btn-accent">添加账号</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-title">编辑账号</div>
+    <div class="modal-field">
+      <span class="modal-label">账号名</span>
+      <input class="modal-input" type="text" value="默认" />
+    </div>
+    <div class="modal-field">
+      <span class="modal-label">Workspace</span>
+      <div class="modal-display">ws-abc123</div>
+    </div>
+    <div class="modal-actions">
+      <button class="popover-btn cancel" onclick="document.getElementById('editModal').classList.remove('show')">取消</button>
+      <button class="btn-accent" style="padding:6px 16px;font-size:12px;">保存</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
