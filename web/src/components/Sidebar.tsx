@@ -11,7 +11,11 @@ const items = [
 
 export function Sidebar({ active, onNavigate }: Props) {
   return (
-    <div style={{ width: 240, height: '100%', background: t.surfaceAlt, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+    <div className="glass" style={{
+      width: 240, height: '100%',
+      display: 'flex', flexDirection: 'column', flexShrink: 0,
+      borderRadius: 0, borderTop: 'none', borderBottom: 'none', borderLeft: 'none',
+    }}>
       <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 16, paddingRight: 16 }}>
         <div style={{ width: 20, height: 20, borderRadius: 5, background: t.accentBlue }} />
         <span style={{ fontSize: t.fsBody, fontWeight: 600, color: t.textPrimary }}>OpenCode Usage Float</span>
@@ -23,12 +27,18 @@ export function Sidebar({ active, onNavigate }: Props) {
           return (
             <button key={item.id} onClick={() => onNavigate(item.id)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                borderRadius: 8, border: 'none', cursor: 'pointer',
                 fontSize: t.fsBody, fontWeight: 500, width: '100%',
-                background: isActive ? t.surfaceHover : 'transparent',
-                color: isActive ? t.accentBlue : t.textSecondary,
+                background: isActive
+                  ? 'linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-cyan))'
+                  : 'transparent',
+                color: isActive ? '#ffffff' : t.textSecondary,
               }}>
-              <div style={{ width: 16, height: 16, borderRadius: 3, background: isActive ? t.accentBlue : t.textTertiary }} />
+              <div style={{
+                width: 16, height: 16, borderRadius: 3,
+                background: isActive ? '#ffffff' : t.textTertiary,
+              }} />
               <span>{item.label}</span>
             </button>
           );

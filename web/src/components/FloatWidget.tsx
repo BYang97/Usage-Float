@@ -24,8 +24,8 @@ export function FloatWidget({ percentage, resetTime, onOpenDashboard, onClose, s
     <div
       className="glass"
       style={{
-        width: 320, height: 180, borderRadius: 12,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden',
+        width: 320, height: 180, borderRadius: 20,
+        boxShadow: 'var(--shadow-float)', overflow: 'hidden',
         position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center',
         ...style,
       }}>

@@ -34,6 +34,9 @@
 
   /* 1.5 阴影 */
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --radius-2xl: 16px;
+
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.1);
   --shadow-float: 0 8px 32px rgba(0, 0, 0, 0.4);
   --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.5);
 
@@ -114,17 +117,19 @@ body,
  * ============================================================ */
 @layer components {
   .glass {
-    background: rgba(26, 27, 30, 0.72);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.3);
   }
-
   .card {
-    background: var(--color-surface-alt);
-    border: 1px solid var(--color-surface-border);
-    border-radius: var(--radius-xl);
+    background: #ffffff;
+    border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s ease;
+  }
+  .card:hover {
+    box-shadow: var(--shadow-hover);
   }
 
   .tag {
@@ -147,5 +152,20 @@ body,
   .tag-danger {
     background: color-mix(in srgb, var(--color-status-danger) 10%, transparent);
     color: var(--color-status-danger);
+  }
+
+  .btn-gradient {
+    background: linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-cyan));
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: 8px 16px;
+    font-size: var(--fs-body);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-gradient:hover {
+    opacity: 0.9;
   }
 }

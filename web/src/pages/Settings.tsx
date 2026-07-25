@@ -11,8 +11,7 @@ export function Settings({ onNavigate }: Props) {
 
   return (
     <PageLayout active="settings" title="设置" onNavigate={onNavigate}>
-      <div style={{
-        background: t.surfaceAlt, borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+      <div className="card" style={{
         width: 480, overflow: 'hidden', maxHeight: '90vh', overflowY: 'auto', alignSelf: 'center',
       }}>
         {/* Title */}
