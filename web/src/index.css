@@ -6,69 +6,44 @@
  * 修改 token 只动这里,无需 tailwind.config.ts。
  * ============================================================ */
 @theme {
-  /* 1.1 色彩系统(OpenPencil 设计稿) */
-  --color-surface: #1a1c1e;        /* 主背景 */
-  --color-surface-alt: #2e3033;    /* 卡片背景(亮,设计稿 surfaceAlt) */
-  --color-surface-hover: #34363a;  /* hover 态 */
-  --color-surface-border: #3f4247; /* 边框(清晰,设计稿 border) */
-  --color-card: #282b2d;           /* 卡片(设计稿 card) */
+  /* 浅色主题(Linear/Vercel/Stripe 风格) */
+  --color-surface: #f8f9fa;
+  --color-surface-alt: #ffffff;
+  --color-surface-hover: #f1f3f5;
+  --color-surface-border: #e9ecef;
+  --color-card: #ffffff;
 
-  --color-text-primary: #f2f4f9;   /* 主文本(亮,设计稿 text) */
-  --color-text-secondary: #9ea3ad; /* 次文本(设计稿 textSec) */
-  --color-text-tertiary: #72757f;  /* 弱文本(设计稿 textTer) */
-  --color-text-inverse: #0d0d0f;
+  --color-text-primary: #1a1d21;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+  --color-text-inverse: #ffffff;
 
-  --color-accent-blue: #599eff;    /* 设计稿 accent */
-  --color-accent-green: #4cd18c;   /* 设计稿 success */
-  --color-accent-cyan: #22d3ee;
+  --color-accent-blue: #6366f1;
+  --color-accent-green: #10b981;
+  --color-accent-cyan: #06b6d4;
+  --color-accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
 
-  --color-status-ok: #4cd18c;      /* 正常(设计稿 success) */
-  --color-status-warning: #f2c14f; /* 警告(设计稿 warning) */
-  --color-status-danger: #ea6060;  /* 危险(设计稿 danger) */
+  --color-status-ok: #10b981;
+  --color-status-warning: #f59e0b;
+  --color-status-danger: #ef4444;
 
-  /* 1.4 圆角 */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  /* 圆角(大) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
 
-  /* 1.5 阴影 */
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  /* 阴影(柔和) */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
+  --shadow-float: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.08);
   --radius-2xl: 16px;
 
-  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.1);
-  --shadow-float: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.5);
-
-  /* 1.2 字体族 */
-  --font-sans: "Inter", "Segoe UI", -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
-
-  /* 1.2 字体大小 — 用户分级 (可用作 CSS 变量或 Tailwind text-* 类) */
-  --fs-h1: 24px;
-  --fs-h1--line-height: 1.3;
-  --fs-h1--font-weight: 600;
-  --fs-h2: 16px;
-  --fs-h2--line-height: 1.4;
-  --fs-h2--font-weight: 600;
-  --fs-h3: 14px;
-  --fs-h3--line-height: 1.4;
-  --fs-h3--font-weight: 600;
-  --fs-body: 13px;
-  --fs-body--line-height: 1.5;
-  --fs-body--font-weight: 400;
-  --fs-secondary: 12px;
-  --fs-secondary--line-height: 1.4;
-  --fs-secondary--font-weight: 500;
-  --fs-weak: 11px;
-  --fs-weak--line-height: 1.4;
-  --fs-weak--font-weight: 500;
-
-  /* 1.2b 大数字 — 28~32px 用于 QuotaCard 百分比 */
-  --fs-hero: 32px;
-  --fs-hero--line-height: 1.2;
-  --fs-hero--font-weight: 700;
-}
+  /* 玻璃 */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: 20px;
 
 /* ============================================================
  * 全局基础样式
@@ -117,7 +92,11 @@ body,
  * ============================================================ */
 @layer components {
   .glass {
+<<<<<<< Updated upstream
     background: rgba(255, 255, 255, 0.7);
+=======
+    background: rgba(255, 255, 255, 0.8);
+>>>>>>> Stashed changes
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.3);
