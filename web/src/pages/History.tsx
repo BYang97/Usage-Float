@@ -209,6 +209,7 @@ export function History({ onNavigate, onMinimize, onClose }: Props) {
                     </tbody>
                   </table>
                 </div>
+                )}
                 {hasMore && (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
                     <button
